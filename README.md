@@ -2,6 +2,8 @@
 
 Aplikasi web modern manajemen lingkungan Rukun Warga berbasis **Laravel 12 (Backend)** dan **Vite + Tailwind CSS + Alpine.js (Frontend)** dengan arsitektur terpisah 2 folder (`frontend` & `backend`).
 
+**Repository GitHub:** [https://github.com/Demoy-younger2/RUWA.git](https://github.com/Demoy-younger2/RUWA.git)
+
 ---
 
 ## 📁 Struktur Direktori (2 Folder Architecture)
