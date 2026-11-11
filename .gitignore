@@ -33,3 +33,5 @@ pnpm-debug.log*
 *.swo
 .DS_Store
 Thumbs.db
+gh.exe
+push_helper.ps1
