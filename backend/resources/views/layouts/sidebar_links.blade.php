@@ -49,18 +49,68 @@
     </a>
 </div>
 
-<!-- Kelompok 3: Keuangan & Ekonomi Warga -->
+<!-- Kelompok 3: Keuangan & Kas Lingkungan -->
 <div class="space-y-1">
-    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Keuangan & Usaha</p>
+    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Keuangan & Kas</p>
 
-    <!-- Kas Lingkungan -->
-    <a href="{{ route('kas.index') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('kas.*') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+    <!-- Pemasukan -->
+    <a href="{{ route('kas.pemasukan') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('kas.pemasukan') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
         <div class="flex items-center gap-3">
-            <i class="fa-solid fa-coins w-4 text-center text-sm {{ request()->routeIs('kas.*') ? 'text-emerald-600' : 'text-slate-400' }}"></i>
-            <span>Kas RW & RT</span>
+            <i class="fa-solid fa-circle-arrow-down w-4 text-center text-sm {{ request()->routeIs('kas.pemasukan') ? 'text-emerald-600' : 'text-emerald-500' }}"></i>
+            <span>Pemasukan</span>
         </div>
-        <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded-full">Transparan</span>
+        <span class="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-md">+Masuk</span>
     </a>
+
+    <!-- Pengeluaran -->
+    <a href="{{ route('kas.pengeluaran') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('kas.pengeluaran') ? 'bg-rose-50 text-rose-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-circle-arrow-up w-4 text-center text-sm {{ request()->routeIs('kas.pengeluaran') ? 'text-rose-600' : 'text-rose-500' }}"></i>
+            <span>Pengeluaran</span>
+        </div>
+        <span class="text-[9px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-md">-Keluar</span>
+    </a>
+
+    <!-- Semua Transaksi (Buku Kas Umum) -->
+    <a href="{{ route('kas.semua') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('kas.semua') || (request()->routeIs('kas.index') && !request()->routeIs('kas.pemasukan') && !request()->routeIs('kas.pengeluaran')) ? 'bg-teal-50 text-teal-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-book-bookmark w-4 text-center text-sm {{ request()->routeIs('kas.semua') ? 'text-teal-600' : 'text-slate-400' }}"></i>
+            <span>Semua Transaksi</span>
+        </div>
+        <span class="text-[9px] bg-teal-100 text-teal-800 font-bold px-1.5 py-0.5 rounded-md">Buku Kas</span>
+    </a>
+
+    <!-- Kategori Kas -->
+    <a href="{{ route('kas.kategori') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('kas.kategori*') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-tags w-4 text-center text-sm {{ request()->routeIs('kas.kategori*') ? 'text-emerald-600' : 'text-slate-400' }}"></i>
+            <span>Kategori</span>
+        </div>
+        <span class="text-[9px] bg-slate-100 text-slate-600 font-semibold px-1.5 py-0.5 rounded-md">Master</span>
+    </a>
+
+    <!-- Kelola Tagihan Warga -->
+    <a href="{{ route('kas.tagihan') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('kas.tagihan*') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-file-invoice-dollar w-4 text-center text-sm {{ request()->routeIs('kas.tagihan*') ? 'text-emerald-600' : 'text-blue-500' }}"></i>
+            <span>Kelola Tagihan</span>
+        </div>
+        <span class="text-[9px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.5 rounded-md">Iuran</span>
+    </a>
+
+    <!-- Kelola Rekening & QRIS -->
+    <a href="{{ route('kas.rekening') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('kas.rekening*') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-qrcode w-4 text-center text-sm {{ request()->routeIs('kas.rekening*') ? 'text-emerald-600' : 'text-purple-500' }}"></i>
+            <span>Rekening & QRIS</span>
+        </div>
+        <span class="text-[9px] bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded-md">Bank</span>
+    </a>
+</div>
+
+<!-- Kelompok 3.1: Usaha & Ekonomi Warga -->
+<div class="space-y-1">
+    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Usaha & Ekonomi</p>
 
     <!-- Bank Sampah -->
     <a href="{{ route('bank-sampah.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('bank-sampah.*') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">

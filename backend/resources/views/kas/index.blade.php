@@ -23,6 +23,16 @@
         @endif
     </div>
 
+    <!-- Navigation Sub-Menu Tab -->
+    <div class="flex items-center gap-2 overflow-x-auto border-b border-slate-200 pb-2 text-xs font-bold">
+        <a href="{{ route('kas.semua') }}" class="px-3.5 py-1.5 rounded-xl {{ ($activeSubmenu ?? 'semua') === 'semua' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100' }} transition">Semua Transaksi</a>
+        <a href="{{ route('kas.pemasukan') }}" class="px-3.5 py-1.5 rounded-xl {{ ($activeSubmenu ?? '') === 'pemasukan' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100' }} transition">Pemasukan</a>
+        <a href="{{ route('kas.pengeluaran') }}" class="px-3.5 py-1.5 rounded-xl {{ ($activeSubmenu ?? '') === 'pengeluaran' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100' }} transition">Pengeluaran</a>
+        <a href="{{ route('kas.kategori') }}" class="px-3.5 py-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition">Kategori Kas</a>
+        <a href="{{ route('kas.tagihan') }}" class="px-3.5 py-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition">Kelola Tagihan</a>
+        <a href="{{ route('kas.rekening') }}" class="px-3.5 py-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition">Rekening & QRIS</a>
+    </div>
+
     <!-- Saldo & Metrics Overview Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">

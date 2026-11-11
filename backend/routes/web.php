@@ -58,7 +58,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/surat/{surat}/reject', [SuratController::class, 'reject'])->name('surat.reject');
     Route::get('/surat/{surat}/cetak', [SuratController::class, 'cetak'])->name('surat.cetak');
 
-    // 4. Kas Keuangan
+    // 4. Kas Keuangan & Modul Finansial
+    Route::get('/kas/pemasukan', [KasController::class, 'pemasukan'])->name('kas.pemasukan');
+    Route::get('/kas/pengeluaran', [KasController::class, 'pengeluaran'])->name('kas.pengeluaran');
+    Route::get('/kas/semua-transaksi', [KasController::class, 'index'])->name('kas.semua');
+    Route::get('/kas/kategori', [KasController::class, 'kategori'])->name('kas.kategori');
+    Route::post('/kas/kategori', [KasController::class, 'storeKategori'])->name('kas.kategori.store');
+    Route::delete('/kas/kategori/{id}', [KasController::class, 'destroyKategori'])->name('kas.kategori.destroy');
+    Route::get('/kas/tagihan', [KasController::class, 'tagihan'])->name('kas.tagihan');
+    Route::post('/kas/tagihan', [KasController::class, 'storeTagihan'])->name('kas.tagihan.store');
+    Route::post('/kas/tagihan/generate', [KasController::class, 'generateTagihan'])->name('kas.tagihan.generate');
+    Route::post('/kas/tagihan/{id}/verifikasi', [KasController::class, 'verifikasiTagihan'])->name('kas.tagihan.verifikasi');
+    Route::delete('/kas/tagihan/{id}', [KasController::class, 'destroyTagihan'])->name('kas.tagihan.destroy');
+    Route::get('/kas/rekening', [KasController::class, 'rekening'])->name('kas.rekening');
+    Route::post('/kas/rekening', [KasController::class, 'storeRekening'])->name('kas.rekening.store');
+    Route::delete('/kas/rekening/{id}', [KasController::class, 'destroyRekening'])->name('kas.rekening.destroy');
     Route::resource('kas', KasController::class)->except(['edit', 'update']);
 
     // 5. Keamanan & Ronda

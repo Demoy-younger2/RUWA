@@ -21,6 +21,9 @@ class Kas extends Model
         'jumlah',
         'tanggal',
         'keterangan',
+        'pihak_terkait',
+        'metode',
+        'tagihan_id',
         'bukti_transaksi',
     ];
 
@@ -32,5 +35,10 @@ class Kas extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tagihan()
+    {
+        return $this->belongsTo(TagihanWarga::class, 'tagihan_id');
     }
 }

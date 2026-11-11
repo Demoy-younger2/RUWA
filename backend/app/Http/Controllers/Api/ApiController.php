@@ -8,15 +8,18 @@ use App\Models\Aset;
 use App\Models\Aspirasi;
 use App\Models\BankSampah;
 use App\Models\Kas;
+use App\Models\KategoriKas;
 use App\Models\Kegiatan;
 use App\Models\KoperasiAnggota;
 use App\Models\KoperasiTransaksi;
 use App\Models\PeminjamanAset;
 use App\Models\Pengaturan;
 use App\Models\Posyandu;
+use App\Models\RekeningKas;
 use App\Models\Ronda;
 use App\Models\Rukem;
 use App\Models\Surat;
+use App\Models\TagihanWarga;
 use App\Models\TransaksiBankSampah;
 use App\Models\Umkm;
 use App\Models\User;
@@ -288,20 +291,61 @@ class ApiController extends Controller
         return response()->json(['message' => 'Surat berhasil disetujui RW!', 'surat' => $surat]);
     }
 
-    // ==========================================
-    // 6. KAS KEUANGAN
-    // ==========================================
-    public function getKas()
+    // ========================================================
+    // 6. KAS KEUANGAN (PEMASUKAN, PENGELUARAN, SEMUA TRANSAKSI)
+    // ========================================================
+    public function getKas(Request $request)
     {
-        $kas = Kas::with('user')->latest('tanggal')->get();
-        $pemasukan = Kas::where('jenis', 'pemasukan')->sum('jumlah');
-        $pengeluaran = Kas::where('jenis', 'pengeluaran')->sum('jumlah');
+        $query = Kas::with(['user', 'tagihan'])->latest('tanggal')->latest('id');
+
+        if ($request->filled('jenis')) {
+            $query->where('jenis', $request->jenis);
+        }
+        if ($request->filled('tingkat')) {
+            $query->where('tingkat', $request->tingkat);
+        }
+        if ($request->filled('rt')) {
+            $query->where('rt', $request->rt);
+        }
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('keterangan', 'like', "%{$search}%")
+                  ->orWhere('pihak_terkait', 'like', "%{$search}%")
+                  ->orWhere('kategori', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('tanggal_mulai') && $request->filled('tanggal_akhir')) {
+            $query->whereBetween('tanggal', [$request->tanggal_mulai, $request->tanggal_akhir]);
+        }
+
+        $kasList = $query->get();
+
+        $totalPemasukan = Kas::where('jenis', 'pemasukan')
+            ->when($request->filled('tingkat'), fn($q) => $q->where('tingkat', $request->tingkat))
+            ->when($request->filled('rt'), fn($q) => $q->where('rt', $request->rt))
+            ->sum('jumlah');
+
+        $totalPengeluaran = Kas::where('jenis', 'pengeluaran')
+            ->when($request->filled('tingkat'), fn($q) => $q->where('tingkat', $request->tingkat))
+            ->when($request->filled('rt'), fn($q) => $q->where('rt', $request->rt))
+            ->sum('jumlah');
+
+        $kategoriPemasukan = KategoriKas::where('jenis', 'pemasukan')->where('is_aktif', true)->pluck('nama');
+        $kategoriPengeluaran = KategoriKas::where('jenis', 'pengeluaran')->where('is_aktif', true)->pluck('nama');
+        $rekenings = RekeningKas::where('is_aktif', true)->get();
 
         return response()->json([
-            'kas' => $kas,
-            'total_pemasukan' => $pemasukan,
-            'total_pengeluaran' => $pengeluaran,
-            'saldo' => $pemasukan - $pengeluaran,
+            'kas' => $kasList,
+            'total_pemasukan' => $totalPemasukan,
+            'total_pengeluaran' => $totalPengeluaran,
+            'saldo' => $totalPemasukan - $totalPengeluaran,
+            'kategori_pemasukan' => $kategoriPemasukan,
+            'kategori_pengeluaran' => $kategoriPengeluaran,
+            'rekenings' => $rekenings,
         ]);
     }
 
@@ -309,17 +353,519 @@ class ApiController extends Controller
     {
         $data = $request->validate([
             'tingkat' => 'required|in:RW,RT',
-            'rt' => 'nullable',
-            'kategori' => 'required',
+            'rt' => 'nullable|string|max:5',
+            'kategori' => 'required|string',
             'jenis' => 'required|in:pemasukan,pengeluaran',
             'jumlah' => 'required|numeric|min:1000',
             'tanggal' => 'required|date',
-            'keterangan' => 'required',
+            'keterangan' => 'required|string',
+            'pihak_terkait' => 'nullable|string|max:255',
+            'metode' => 'nullable|string|max:50',
+            'bukti_transaksi' => 'nullable|string',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
-        $kas = Kas::create(array_merge($data, ['user_id' => 1, 'rw' => '05']));
-        ActivityLog::record('Kas', 'Transaksi', 'Pencatatan kas ' . $data['jenis'] . ' ' . $data['tingkat'] . ' sebesar Rp ' . number_format($data['jumlah']) . ' (' . $data['kategori'] . ').');
-        return response()->json(['message' => 'Transaksi kas berhasil dicatat!', 'kas' => $kas]);
+        $userId = $data['user_id'] ?? (Auth::id() ?? 1);
+        $kas = Kas::create(array_merge($data, [
+            'user_id' => $userId,
+            'rt' => $data['rt'] ?? '01',
+            'rw' => '05',
+            'pihak_terkait' => $data['pihak_terkait'] ?? ($data['jenis'] === 'pemasukan' ? 'Warga' : 'Pihak Terkait'),
+            'metode' => $data['metode'] ?? 'Tunai',
+        ]));
+
+        ActivityLog::record(
+            'Kas',
+            'Transaksi',
+            'Pencatatan kas ' . strtoupper($data['jenis']) . ' ' . $data['tingkat'] . ' sebesar Rp ' . number_format($data['jumlah'], 0, ',', '.') . ' (' . $data['kategori'] . ' - ' . $data['keterangan'] . ').'
+        );
+
+        return response()->json(['message' => 'Transaksi ' . $data['jenis'] . ' berhasil dicatat!', 'kas' => $kas]);
+    }
+
+    public function updateKas(Request $request, $id)
+    {
+        $kas = Kas::findOrFail($id);
+
+        $data = $request->validate([
+            'tingkat' => 'required|in:RW,RT',
+            'rt' => 'nullable|string|max:5',
+            'kategori' => 'required|string',
+            'jenis' => 'required|in:pemasukan,pengeluaran',
+            'jumlah' => 'required|numeric|min:1000',
+            'tanggal' => 'required|date',
+            'keterangan' => 'required|string',
+            'pihak_terkait' => 'nullable|string|max:255',
+            'metode' => 'nullable|string|max:50',
+            'bukti_transaksi' => 'nullable|string',
+        ]);
+
+        $kas->update($data);
+
+        ActivityLog::record(
+            'Kas',
+            'Edit',
+            'Memperbarui transaksi kas ' . strtoupper($kas->jenis) . ' #' . $kas->id . ' senilai Rp ' . number_format($kas->jumlah, 0, ',', '.') . ' (' . $kas->kategori . ').'
+        );
+
+        return response()->json(['message' => 'Transaksi kas berhasil diperbarui!', 'kas' => $kas]);
+    }
+
+    public function deleteKas(Request $request, $id)
+    {
+        $kas = Kas::findOrFail($id);
+        $ket = $kas->keterangan;
+        $jumlah = $kas->jumlah;
+        $jenis = $kas->jenis;
+        $kas->delete();
+
+        ActivityLog::record(
+            'Kas',
+            'Hapus',
+            'Menghapus transaksi ' . strtoupper($jenis) . ' senilai Rp ' . number_format($jumlah, 0, ',', '.') . ' (' . $ket . ').'
+        );
+
+        return response()->json(['message' => 'Transaksi kas berhasil dihapus!']);
+    }
+
+    // ========================================================
+    // 6.1 MASTER KATEGORI KAS
+    // ========================================================
+    public function getKategoriKas(Request $request)
+    {
+        $query = KategoriKas::orderBy('jenis')->orderBy('nama');
+        if ($request->filled('jenis')) {
+            $query->where('jenis', $request->jenis);
+        }
+        if ($request->filled('tingkat')) {
+            $query->where('tingkat', $request->tingkat);
+        }
+
+        $kategoris = $query->get()->map(function ($kat) {
+            $kat->total_transaksi = Kas::where('kategori', $kat->nama)->count();
+            $kat->total_nominal = Kas::where('kategori', $kat->nama)->sum('jumlah');
+            return $kat;
+        });
+
+        return response()->json($kategoris);
+    }
+
+    public function storeKategoriKas(Request $request)
+    {
+        $data = $request->validate([
+            'nama' => 'required|string|max:100',
+            'jenis' => 'required|in:pemasukan,pengeluaran',
+            'tingkat' => 'required|in:RW,RT',
+            'deskripsi' => 'nullable|string|max:255',
+            'is_aktif' => 'nullable|boolean',
+        ]);
+
+        $data['is_aktif'] = $request->has('is_aktif') ? (bool) $request->is_aktif : true;
+        $kategori = KategoriKas::create($data);
+
+        ActivityLog::record('Kas', 'Kategori', 'Menambahkan kategori kas baru: ' . $kategori->nama . ' (' . strtoupper($kategori->jenis) . ').');
+        return response()->json(['message' => 'Kategori kas berhasil ditambahkan!', 'kategori' => $kategori]);
+    }
+
+    public function updateKategoriKas(Request $request, $id)
+    {
+        $kategori = KategoriKas::findOrFail($id);
+        $data = $request->validate([
+            'nama' => 'required|string|max:100',
+            'jenis' => 'required|in:pemasukan,pengeluaran',
+            'tingkat' => 'required|in:RW,RT',
+            'deskripsi' => 'nullable|string|max:255',
+            'is_aktif' => 'nullable|boolean',
+        ]);
+
+        $kategori->update($data);
+        ActivityLog::record('Kas', 'Kategori', 'Memperbarui kategori kas: ' . $kategori->nama . '.');
+        return response()->json(['message' => 'Kategori kas berhasil diperbarui!', 'kategori' => $kategori]);
+    }
+
+    public function deleteKategoriKas(Request $request, $id)
+    {
+        $kategori = KategoriKas::findOrFail($id);
+        $nama = $kategori->nama;
+        $kategori->delete();
+
+        ActivityLog::record('Kas', 'Kategori', 'Menghapus kategori kas: ' . $nama . '.');
+        return response()->json(['message' => 'Kategori kas berhasil dihapus!']);
+    }
+
+    // ========================================================
+    // 6.2 KELOLA TAGIHAN WARGA
+    // ========================================================
+    public function getTagihanWarga(Request $request)
+    {
+        $query = TagihanWarga::with(['user', 'rekening'])->latest('id');
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('periode')) {
+            $query->where('periode', $request->periode);
+        }
+        if ($request->filled('rt')) {
+            $query->where('rt', $request->rt);
+        }
+        if ($request->filled('tingkat')) {
+            $query->where('tingkat', $request->tingkat);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_warga', 'like', "%{$search}%")
+                  ->orWhere('kode_tagihan', 'like', "%{$search}%")
+                  ->orWhere('judul', 'like', "%{$search}%");
+            });
+        }
+
+        $tagihans = $query->get();
+
+        $stats = [
+            'total_tagihan' => TagihanWarga::count(),
+            'total_lunas' => TagihanWarga::where('status', 'lunas')->count(),
+            'total_menunggu_verifikasi' => TagihanWarga::where('status', 'menunggu_verifikasi')->count(),
+            'total_belum_bayar' => TagihanWarga::where('status', 'belum_bayar')->count(),
+            'nominal_terkumpul' => TagihanWarga::where('status', 'lunas')->sum('nominal'),
+            'nominal_tertunggak' => TagihanWarga::where('status', '!=', 'lunas')->sum('nominal'),
+        ];
+
+        $wargas = Warga::select('id', 'user_id', 'nama_lengkap', 'nik', 'no_kk', 'rt', 'rw', 'alamat')->get();
+        $rekenings = RekeningKas::where('is_aktif', true)->get();
+
+        return response()->json([
+            'tagihans' => $tagihans,
+            'stats' => $stats,
+            'wargas' => $wargas,
+            'rekenings' => $rekenings,
+        ]);
+    }
+
+    public function storeTagihanWarga(Request $request)
+    {
+        $data = $request->validate([
+            'judul' => 'required|string|max:200',
+            'tingkat' => 'required|in:RW,RT',
+            'rt' => 'nullable|string|max:5',
+            'user_id' => 'nullable|exists:users,id',
+            'nama_warga' => 'required|string|max:150',
+            'nik' => 'nullable|string|max:20',
+            'nomor_rumah' => 'nullable|string|max:50',
+            'periode' => 'required|string|max:50',
+            'nominal' => 'required|numeric|min:5000',
+            'kategori' => 'required|string|max:100',
+            'tanggal_jatuh_tempo' => 'nullable|date',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $countThisMonth = TagihanWarga::whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->count() + 1;
+        $kodeTagihan = 'TGH-' . now()->format('Ym') . '-' . str_pad($countThisMonth, 3, '0', STR_PAD_LEFT);
+
+        $tagihan = TagihanWarga::create(array_merge($data, [
+            'kode_tagihan' => $kodeTagihan,
+            'rt' => $data['rt'] ?? '01',
+            'status' => 'belum_bayar',
+        ]));
+
+        ActivityLog::record(
+            'Kas',
+            'Tagihan',
+            'Menerbitkan tagihan ' . $tagihan->kode_tagihan . ' untuk ' . $tagihan->nama_warga . ' sebesar Rp ' . number_format($tagihan->nominal, 0, ',', '.') . ' (' . $tagihan->judul . ').'
+        );
+
+        return response()->json(['message' => 'Tagihan warga berhasil dibuat!', 'tagihan' => $tagihan]);
+    }
+
+    public function generateTagihanMassal(Request $request)
+    {
+        $data = $request->validate([
+            'judul' => 'required|string|max:200',
+            'tingkat' => 'required|in:RW,RT',
+            'rt' => 'nullable|string|max:5',
+            'periode' => 'required|string|max:50',
+            'nominal' => 'required|numeric|min:5000',
+            'kategori' => 'required|string|max:100',
+            'tanggal_jatuh_tempo' => 'nullable|date',
+        ]);
+
+        $wargaQuery = Warga::query();
+        if ($data['tingkat'] === 'RT' && !empty($data['rt']) && $data['rt'] !== 'all') {
+            $wargaQuery->where('rt', $data['rt']);
+        }
+
+        $wargaList = $wargaQuery->get();
+        if ($wargaList->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada data warga ditemukan untuk kriteria RT tersebut.'], 422);
+        }
+
+        $createdCount = 0;
+        $prefix = 'TGH-' . now()->format('Ym') . '-';
+        $baseCount = TagihanWarga::count();
+
+        foreach ($wargaList as $index => $w) {
+            $existing = TagihanWarga::where('periode', $data['periode'])
+                ->where('kategori', $data['kategori'])
+                ->where(function ($q) use ($w) {
+                    if ($w->user_id) {
+                        $q->where('user_id', $w->user_id);
+                    } else {
+                        $q->where('nama_warga', $w->nama_lengkap);
+                    }
+                })->first();
+
+            if (!$existing) {
+                $baseCount++;
+                $kode = $prefix . str_pad($baseCount, 4, '0', STR_PAD_LEFT);
+
+                TagihanWarga::create([
+                    'kode_tagihan' => $kode,
+                    'judul' => $data['judul'],
+                    'tingkat' => $data['tingkat'],
+                    'rt' => $w->rt ?? ($data['rt'] ?? '01'),
+                    'user_id' => $w->user_id,
+                    'nama_warga' => $w->nama_lengkap,
+                    'nik' => $w->nik,
+                    'nomor_rumah' => $w->alamat ?? 'RT ' . ($w->rt ?? '01'),
+                    'periode' => $data['periode'],
+                    'nominal' => $data['nominal'],
+                    'kategori' => $data['kategori'],
+                    'status' => 'belum_bayar',
+                    'tanggal_jatuh_tempo' => $data['tanggal_jatuh_tempo'] ?? now()->addDays(20)->toDateString(),
+                ]);
+                $createdCount++;
+            }
+        }
+
+        ActivityLog::record(
+            'Kas',
+            'Tagihan Massal',
+            'Men-generate ' . $createdCount . ' tagihan massal (' . $data['judul'] . ') periode ' . $data['periode'] . ' nominal Rp ' . number_format($data['nominal'], 0, ',', '.') . '.'
+        );
+
+        return response()->json([
+            'message' => "Berhasil men-generate {$createdCount} tagihan warga secara massal!",
+            'created_count' => $createdCount,
+        ]);
+    }
+
+    public function bayarTagihanWarga(Request $request, $id)
+    {
+        $tagihan = TagihanWarga::findOrFail($id);
+
+        $data = $request->validate([
+            'metode_pembayaran' => 'required|string',
+            'rekening_id' => 'nullable|exists:rekening_kas,id',
+            'tanggal_bayar' => 'required|date',
+            'bukti_bayar' => 'nullable|string',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $tagihan->update([
+            'status' => 'menunggu_verifikasi',
+            'metode_pembayaran' => $data['metode_pembayaran'],
+            'rekening_id' => $data['rekening_id'] ?? null,
+            'tanggal_bayar' => $data['tanggal_bayar'],
+            'bukti_bayar' => $data['bukti_bayar'] ?? 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=60',
+            'catatan' => $data['catatan'] ?? 'Warga telah melakukan pembayaran dan melampirkan konfirmasi.',
+        ]);
+
+        ActivityLog::record(
+            'Kas',
+            'Konfirmasi Bayar',
+            'Warga ' . $tagihan->nama_warga . ' mengonfirmasi pembayaran tagihan ' . $tagihan->kode_tagihan . ' (' . $tagihan->judul . ') via ' . $data['metode_pembayaran'] . '.'
+        );
+
+        return response()->json(['message' => 'Konfirmasi pembayaran berhasil dikirim! Menunggu verifikasi bendahara.', 'tagihan' => $tagihan]);
+    }
+
+    public function verifikasiTagihanWarga(Request $request, $id)
+    {
+        $tagihan = TagihanWarga::findOrFail($id);
+
+        $data = $request->validate([
+            'status' => 'required|in:lunas,belum_bayar',
+            'petugas' => 'required|string',
+            'catatan' => 'nullable|string',
+        ]);
+
+        if ($data['status'] === 'lunas') {
+            $tagihan->update([
+                'status' => 'lunas',
+                'diverifikasi_oleh' => $data['petugas'],
+                'tanggal_bayar' => $tagihan->tanggal_bayar ?? now()->toDateString(),
+                'catatan' => $data['catatan'] ?? 'Pembayaran telah diverifikasi valid oleh bendahara.',
+            ]);
+
+            // Otomatis catat ke kas pemasukan
+            Kas::create([
+                'tingkat' => $tagihan->tingkat,
+                'rt' => $tagihan->rt,
+                'rw' => '05',
+                'user_id' => $tagihan->user_id ?? 1,
+                'kategori' => $tagihan->kategori,
+                'jenis' => 'pemasukan',
+                'jumlah' => $tagihan->nominal,
+                'tanggal' => $tagihan->tanggal_bayar ?? now()->toDateString(),
+                'keterangan' => 'Pembayaran ' . $tagihan->judul . ' oleh ' . $tagihan->nama_warga . ' (' . $tagihan->kode_tagihan . ')',
+                'pihak_terkait' => $tagihan->nama_warga,
+                'metode' => $tagihan->metode_pembayaran ?? 'Transfer Bank',
+                'tagihan_id' => $tagihan->id,
+                'bukti_transaksi' => $tagihan->bukti_bayar,
+            ]);
+
+            ActivityLog::record(
+                'Kas',
+                'Verifikasi Tagihan',
+                $data['petugas'] . ' memverifikasi LUNAS tagihan ' . $tagihan->kode_tagihan . ' (' . $tagihan->nama_warga . ') sebesar Rp ' . number_format($tagihan->nominal, 0, ',', '.') . '.'
+            );
+
+            return response()->json(['message' => 'Tagihan berhasil diverifikasi LUNAS dan dicatat ke arus kas!', 'tagihan' => $tagihan]);
+        } else {
+            $tagihan->update([
+                'status' => 'belum_bayar',
+                'catatan' => $data['catatan'] ?? 'Pembayaran ditolak / bukti transfer tidak valid.',
+            ]);
+
+            ActivityLog::record(
+                'Kas',
+                'Tolak Tagihan',
+                $data['petugas'] . ' menolak bukti pembayaran tagihan ' . $tagihan->kode_tagihan . ' (' . $tagihan->nama_warga . ').'
+            );
+
+            return response()->json(['message' => 'Pembayaran tagihan ditolak.', 'tagihan' => $tagihan]);
+        }
+    }
+
+    public function updateTagihanWarga(Request $request, $id)
+    {
+        $tagihan = TagihanWarga::findOrFail($id);
+        $data = $request->validate([
+            'judul' => 'required|string|max:200',
+            'tingkat' => 'required|in:RW,RT',
+            'rt' => 'nullable|string|max:5',
+            'nama_warga' => 'required|string|max:150',
+            'nomor_rumah' => 'nullable|string|max:50',
+            'periode' => 'required|string|max:50',
+            'nominal' => 'required|numeric|min:5000',
+            'kategori' => 'required|string|max:100',
+            'status' => 'required|in:belum_bayar,menunggu_verifikasi,lunas',
+            'tanggal_jatuh_tempo' => 'nullable|date',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $tagihan->update($data);
+        ActivityLog::record('Kas', 'Edit Tagihan', 'Memperbarui tagihan ' . $tagihan->kode_tagihan . ' (' . $tagihan->nama_warga . ').');
+        return response()->json(['message' => 'Tagihan berhasil diperbarui!', 'tagihan' => $tagihan]);
+    }
+
+    public function deleteTagihanWarga(Request $request, $id)
+    {
+        $tagihan = TagihanWarga::findOrFail($id);
+        $kode = $tagihan->kode_tagihan;
+        $tagihan->delete();
+
+        ActivityLog::record('Kas', 'Hapus Tagihan', 'Menghapus tagihan ' . $kode . '.');
+        return response()->json(['message' => 'Tagihan berhasil dihapus!']);
+    }
+
+    // ========================================================
+    // 6.3 KELOLA REKENING & QRIS
+    // ========================================================
+    public function getRekeningKas(Request $request)
+    {
+        $query = RekeningKas::orderBy('tingkat')->orderBy('id');
+        if ($request->filled('tingkat')) {
+            $query->where('tingkat', $request->tingkat);
+        }
+        if ($request->filled('rt')) {
+            $query->where('rt', $request->rt);
+        }
+        if ($request->filled('is_aktif')) {
+            $query->where('is_aktif', (bool) $request->is_aktif);
+        }
+
+        $rekenings = $query->get();
+        return response()->json($rekenings);
+    }
+
+    public function storeRekeningKas(Request $request)
+    {
+        $data = $request->validate([
+            'tingkat' => 'required|in:RW,RT',
+            'rt' => 'nullable|string|max:5',
+            'nama_bank' => 'required|string|max:100',
+            'nomor_rekening' => 'required|string|max:100',
+            'atas_nama' => 'required|string|max:150',
+            'tipe' => 'required|in:bank,qris,ewallet',
+            'qris_image' => 'nullable|string',
+            'keterangan' => 'nullable|string|max:255',
+            'is_aktif' => 'nullable|boolean',
+        ]);
+
+        if ($data['tipe'] === 'qris' && empty($data['qris_image'])) {
+            $encodedText = urlencode('QRIS-' . $data['tingkat'] . '-' . $data['nomor_rekening']);
+            $data['qris_image'] = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={$encodedText}";
+        }
+
+        $data['is_aktif'] = $request->has('is_aktif') ? (bool) $request->is_aktif : true;
+        $rekening = RekeningKas::create($data);
+
+        ActivityLog::record(
+            'Kas',
+            'Rekening & QRIS',
+            'Menambahkan ' . strtoupper($rekening->tipe) . ' baru: ' . $rekening->nama_bank . ' (' . $rekening->nomor_rekening . ' a/n ' . $rekening->atas_nama . ').'
+        );
+
+        return response()->json(['message' => 'Rekening / QRIS berhasil disimpan!', 'rekening' => $rekening]);
+    }
+
+    public function updateRekeningKas(Request $request, $id)
+    {
+        $rekening = RekeningKas::findOrFail($id);
+
+        $data = $request->validate([
+            'tingkat' => 'required|in:RW,RT',
+            'rt' => 'nullable|string|max:5',
+            'nama_bank' => 'required|string|max:100',
+            'nomor_rekening' => 'required|string|max:100',
+            'atas_nama' => 'required|string|max:150',
+            'tipe' => 'required|in:bank,qris,ewallet',
+            'qris_image' => 'nullable|string',
+            'keterangan' => 'nullable|string|max:255',
+            'is_aktif' => 'nullable|boolean',
+        ]);
+
+        if ($data['tipe'] === 'qris' && empty($data['qris_image']) && empty($rekening->qris_image)) {
+            $encodedText = urlencode('QRIS-' . $data['tingkat'] . '-' . $data['nomor_rekening']);
+            $data['qris_image'] = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={$encodedText}";
+        }
+
+        $rekening->update($data);
+
+        ActivityLog::record(
+            'Kas',
+            'Rekening & QRIS',
+            'Memperbarui rekening / QRIS: ' . $rekening->nama_bank . ' (' . $rekening->nomor_rekening . ').'
+        );
+
+        return response()->json(['message' => 'Rekening / QRIS berhasil diperbarui!', 'rekening' => $rekening]);
+    }
+
+    public function deleteRekeningKas(Request $request, $id)
+    {
+        $rekening = RekeningKas::findOrFail($id);
+        $info = $rekening->nama_bank . ' (' . $rekening->nomor_rekening . ')';
+        $rekening->delete();
+
+        ActivityLog::record('Kas', 'Rekening & QRIS', 'Menghapus rekening / QRIS: ' . $info . '.');
+        return response()->json(['message' => 'Rekening / QRIS berhasil dihapus!']);
     }
 
     // ==========================================

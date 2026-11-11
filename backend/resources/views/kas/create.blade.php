@@ -38,9 +38,28 @@
                 <label class="block font-bold text-slate-700">Kategori Kas *</label>
                 <select name="kategori" required class="mt-1 block w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
                     @foreach($kategoriList as $kat)
-                        <option value="{{ $kat }}">{{ $kat }}</option>
+                        @php
+                            $namaKat = is_object($kat) ? $kat->nama : $kat;
+                            $jenisKat = is_object($kat) ? ' (' . strtoupper($kat->jenis) . ')' : '';
+                        @endphp
+                        <option value="{{ $namaKat }}">{{ $namaKat }}{{ $jenisKat }}</option>
                     @endforeach
                 </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700">Penyetor / Penerima (Pihak Terkait)</label>
+                    <input type="text" name="pihak_terkait" placeholder="Contoh: Toko Bangunan / Bpk. Budi" class="mt-1 block w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700">Metode Pembayaran</label>
+                    <select name="metode" class="mt-1 block w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option value="Tunai">Tunai</option>
+                        <option value="Transfer Bank">Transfer Bank</option>
+                        <option value="QRIS">QRIS</option>
+                    </select>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">

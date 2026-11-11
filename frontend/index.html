@@ -134,13 +134,62 @@
                     </button>
                 </div>
 
-                <!-- Group 3: Keuangan & Ekonomi -->
+                <!-- Group 3: Keuangan & Kas Lingkungan -->
                 <div class="space-y-1">
-                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Keuangan & Usaha</p>
-                    <button type="button" @click="currentView = 'kas'" :class="currentView === 'kas' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
-                        <i class="fa-solid fa-coins w-4 text-center"></i>
-                        <span>Kas RW & RT</span>
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Keuangan & Kas</p>
+                    
+                    <button type="button" @click="currentView = 'pemasukan'" :class="currentView === 'pemasukan' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-circle-arrow-down w-4 text-center text-emerald-600"></i>
+                            <span>Pemasukan</span>
+                        </div>
+                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md">+Masuk</span>
                     </button>
+
+                    <button type="button" @click="currentView = 'pengeluaran'" :class="currentView === 'pengeluaran' ? 'bg-rose-50 text-rose-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-circle-arrow-up w-4 text-center text-rose-600"></i>
+                            <span>Pengeluaran</span>
+                        </div>
+                        <span class="text-[9px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded-md">-Keluar</span>
+                    </button>
+
+                    <button type="button" @click="currentView = 'semua_transaksi'" :class="currentView === 'semua_transaksi' || currentView === 'kas' ? 'bg-teal-50 text-teal-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-book-bookmark w-4 text-center text-teal-600"></i>
+                            <span>Semua Transaksi</span>
+                        </div>
+                        <span class="text-[9px] bg-teal-100 text-teal-800 font-bold px-1.5 py-0.5 rounded-md">Buku Kas</span>
+                    </button>
+
+                    <button type="button" @click="currentView = 'kategori_kas'" :class="currentView === 'kategori_kas' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-tags w-4 text-center text-slate-500"></i>
+                            <span>Kategori Kas</span>
+                        </div>
+                        <span class="text-[9px] bg-slate-100 text-slate-600 font-semibold px-1.5 py-0.5 rounded-md">Master</span>
+                    </button>
+
+                    <button type="button" @click="currentView = 'tagihan_warga'" :class="currentView === 'tagihan_warga' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-file-invoice-dollar w-4 text-center text-blue-600"></i>
+                            <span>Kelola Tagihan</span>
+                        </div>
+                        <span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded-md">Iuran</span>
+                    </button>
+
+                    <button type="button" @click="currentView = 'rekening_kas'" :class="currentView === 'rekening_kas' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-qrcode w-4 text-center text-purple-600"></i>
+                            <span>Rekening & QRIS</span>
+                        </div>
+                        <span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded-md">Bank</span>
+                    </button>
+                </div>
+
+                <!-- Group 3.1: Usaha & Ekonomi Warga -->
+                <div class="space-y-1">
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Usaha & Ekonomi</p>
                     <button type="button" @click="currentView = 'bank_sampah'" :class="currentView === 'bank_sampah' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
                         <i class="fa-solid fa-recycle w-4 text-center"></i>
                         <span>Bank Sampah</span>
@@ -390,58 +439,650 @@
                 </div>
             </div>
 
-            <!-- VIEW: KAS RW & RT -->
-            <div x-show="currentView === 'kas'" class="space-y-6">
-                <div class="flex items-center justify-between">
+            <!-- ========================================== -->
+            <!-- VIEW: 1. PEMASUKAN KAS -->
+            <!-- ========================================== -->
+            <div x-show="currentView === 'pemasukan'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-extrabold text-slate-900">Kas Keuangan Lingkungan</h2>
-                        <p class="text-xs text-slate-500">Transparansi arus kas masuk, pengeluaran, dan saldo kas bersama</p>
+                        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-arrow-down text-emerald-600"></i>
+                            <span>Pemasukan Kas Lingkungan</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Pencatatan iuran warga, sumbangan swadaya, donasi sosial, dan pendapatan lainnya.</p>
                     </div>
-                    <button type="button" @click="modalKas = true" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
-                        + Catat Kas Baru
-                    </button>
+                    <template x-if="canManageKas()">
+                        <button type="button" @click="openModalKas('pemasukan')" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>+ Catat Pemasukan</span>
+                        </button>
+                    </template>
                 </div>
 
+                <!-- Stats Overview -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
                         <span class="text-xs font-bold text-slate-400 block uppercase">Total Pemasukan</span>
-                        <span class="text-xl font-extrabold text-emerald-600 mt-1 block" x-text="formatRupiah(kas.total_pemasukan)"></span>
+                        <span class="text-2xl font-extrabold text-emerald-600 mt-1 block" x-text="formatRupiah(kas.total_pemasukan)"></span>
+                        <span class="text-[10px] text-emerald-600 font-semibold mt-1 block">Arus dana masuk terverifikasi</span>
                     </div>
                     <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Pengeluaran</span>
-                        <span class="text-xl font-extrabold text-rose-600 mt-1 block" x-text="formatRupiah(kas.total_pengeluaran)"></span>
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Transaksi Masuk</span>
+                        <span class="text-2xl font-extrabold text-slate-800 mt-1 block" x-text="(kas.kas || []).filter(k => k.jenis === 'pemasukan').length + ' Transaksi'"></span>
+                        <span class="text-[10px] text-slate-400 mt-1 block">Frekuensi penerimaan kas</span>
                     </div>
                     <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                        <span class="text-xs font-bold text-slate-400 block uppercase">Saldo Akhir Bersama</span>
-                        <span class="text-xl font-extrabold text-teal-600 mt-1 block" x-text="formatRupiah(kas.saldo)"></span>
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Saldo Kas Bersih</span>
+                        <span class="text-2xl font-extrabold text-teal-600 mt-1 block" x-text="formatRupiah(kas.saldo)"></span>
+                        <span class="text-[10px] text-teal-600 font-semibold mt-1 block">Pemasukan dikurangi pengeluaran</span>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold">
-                            <tr>
-                                <th class="py-3.5 px-4">Tanggal</th>
-                                <th class="py-3.5 px-4">Tingkat</th>
-                                <th class="py-3.5 px-4">Kategori</th>
-                                <th class="py-3.5 px-4">Keterangan</th>
-                                <th class="py-3.5 px-4 text-right">Nominal</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <template x-for="k in (kas.kas || [])" :key="k.id">
-                                <tr class="hover:bg-slate-50">
-                                    <td class="py-3 px-4 font-mono text-slate-400" x-text="formatDate(k.tanggal)"></td>
-                                    <td class="py-3 px-4 font-bold" x-text="k.tingkat"></td>
-                                    <td class="py-3 px-4 text-slate-700" x-text="k.kategori"></td>
-                                    <td class="py-3 px-4 text-slate-500" x-text="k.keterangan"></td>
-                                    <td class="py-3 px-4 text-right font-extrabold"
-                                        :class="k.jenis === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'"
-                                        x-text="(k.jenis === 'pemasukan' ? '+ ' : '- ') + formatRupiah(k.jumlah)"></td>
-                                </tr>
+                <!-- Filter & Search Bar -->
+                <div class="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="text" x-model="filterKas.search" placeholder="Cari keterangan / penyetor..." class="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs outline-none w-full sm:w-64 focus:border-emerald-600">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select x-model="filterKas.kategori" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 outline-none">
+                            <option value="">Semua Kategori Pemasukan</option>
+                            <template x-for="kat in (kas.kategori_pemasukan || [])" :key="kat">
+                                <option :value="kat" x-text="kat"></option>
                             </template>
-                        </tbody>
-                    </table>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table Pemasukan -->
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Tanggal</th>
+                                    <th class="py-3 px-4">Tingkat</th>
+                                    <th class="py-3 px-4">Kategori</th>
+                                    <th class="py-3 px-4">Penyetor / Sumber</th>
+                                    <th class="py-3 px-4">Uraian / Keterangan</th>
+                                    <th class="py-3 px-4">Metode</th>
+                                    <th class="py-3 px-4 text-right">Jumlah (Rp)</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <template x-for="k in (kas.kas || []).filter(item => item.jenis === 'pemasukan' && (!filterKas.kategori || item.kategori === filterKas.kategori) && (!filterKas.search || item.keterangan.toLowerCase().includes(filterKas.search.toLowerCase()) || (item.pihak_terkait && item.pihak_terkait.toLowerCase().includes(filterKas.search.toLowerCase()))))" :key="k.id">
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="py-3 px-4 font-mono text-slate-500" x-text="formatDate(k.tanggal)"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                  :class="k.tingkat === 'RW' ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'"
+                                                  x-text="k.tingkat + (k.tingkat === 'RT' ? ' ' + (k.rt || '01') : ' 05')"></span>
+                                        </td>
+                                        <td class="py-3 px-4 font-bold text-slate-800" x-text="k.kategori"></td>
+                                        <td class="py-3 px-4 text-slate-700" x-text="k.pihak_terkait || 'Warga'"></td>
+                                        <td class="py-3 px-4 text-slate-500 max-w-xs truncate" x-text="k.keterangan"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600" x-text="k.metode || 'Tunai'"></span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right font-mono font-extrabold text-emerald-600 text-xs" x-text="'+ ' + formatRupiah(k.jumlah)"></td>
+                                        <td class="py-3 px-4 text-center">
+                                            <template x-if="canManageKas()">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <button type="button" @click="openModalKas('pemasukan', k)" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" title="Edit">
+                                                        <i class="fa-regular fa-pen-to-square"></i>
+                                                    </button>
+                                                    <button type="button" @click="deleteKas(k.id)" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Hapus">
+                                                        <i class="fa-regular fa-trash-can"></i>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                            <template x-if="!canManageKas()">
+                                                <span class="text-slate-300 text-xs">-</span>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW: 2. PENGELUARAN KAS -->
+            <!-- ========================================== -->
+            <div x-show="currentView === 'pengeluaran'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-arrow-up text-rose-600"></i>
+                            <span>Pengeluaran Kas Lingkungan</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Pencatatan biaya operasional, honor pos ronda, perawatan sarana prasarana, dan santunan duka.</p>
+                    </div>
+                    <template x-if="canManageKas()">
+                        <button type="button" @click="openModalKas('pengeluaran')" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>+ Catat Pengeluaran</span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Pengeluaran</span>
+                        <span class="text-2xl font-extrabold text-rose-600 mt-1 block" x-text="formatRupiah(kas.total_pengeluaran)"></span>
+                        <span class="text-[10px] text-rose-600 font-semibold mt-1 block">Realisasi belanja & biaya</span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Transaksi Keluar</span>
+                        <span class="text-2xl font-extrabold text-slate-800 mt-1 block" x-text="(kas.kas || []).filter(k => k.jenis === 'pengeluaran').length + ' Transaksi'"></span>
+                        <span class="text-[10px] text-slate-400 mt-1 block">Frekuensi belanja operasional</span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Sisa Saldo Kas</span>
+                        <span class="text-2xl font-extrabold text-teal-600 mt-1 block" x-text="formatRupiah(kas.saldo)"></span>
+                        <span class="text-[10px] text-teal-600 font-semibold mt-1 block">Kondisi kas saat ini</span>
+                    </div>
+                </div>
+
+                <!-- Filter & Search Bar -->
+                <div class="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="text" x-model="filterKas.search" placeholder="Cari keterangan / penerima..." class="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs outline-none w-full sm:w-64 focus:border-rose-600">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select x-model="filterKas.kategori" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 outline-none">
+                            <option value="">Semua Kategori Pengeluaran</option>
+                            <template x-for="kat in (kas.kategori_pengeluaran || [])" :key="kat">
+                                <option :value="kat" x-text="kat"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table Pengeluaran -->
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Tanggal</th>
+                                    <th class="py-3 px-4">Tingkat</th>
+                                    <th class="py-3 px-4">Kategori</th>
+                                    <th class="py-3 px-4">Penerima / Peruntukan</th>
+                                    <th class="py-3 px-4">Uraian / Keterangan</th>
+                                    <th class="py-3 px-4">Metode</th>
+                                    <th class="py-3 px-4 text-right">Jumlah (Rp)</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <template x-for="k in (kas.kas || []).filter(item => item.jenis === 'pengeluaran' && (!filterKas.kategori || item.kategori === filterKas.kategori) && (!filterKas.search || item.keterangan.toLowerCase().includes(filterKas.search.toLowerCase()) || (item.pihak_terkait && item.pihak_terkait.toLowerCase().includes(filterKas.search.toLowerCase()))))" :key="k.id">
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="py-3 px-4 font-mono text-slate-500" x-text="formatDate(k.tanggal)"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                  :class="k.tingkat === 'RW' ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'"
+                                                  x-text="k.tingkat + (k.tingkat === 'RT' ? ' ' + (k.rt || '01') : ' 05')"></span>
+                                        </td>
+                                        <td class="py-3 px-4 font-bold text-slate-800" x-text="k.kategori"></td>
+                                        <td class="py-3 px-4 text-slate-700" x-text="k.pihak_terkait || 'Pihak Terkait'"></td>
+                                        <td class="py-3 px-4 text-slate-500 max-w-xs truncate" x-text="k.keterangan"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600" x-text="k.metode || 'Tunai'"></span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right font-mono font-extrabold text-rose-600 text-xs" x-text="'- ' + formatRupiah(k.jumlah)"></td>
+                                        <td class="py-3 px-4 text-center">
+                                            <template x-if="canManageKas()">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <button type="button" @click="openModalKas('pengeluaran', k)" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" title="Edit">
+                                                        <i class="fa-regular fa-pen-to-square"></i>
+                                                    </button>
+                                                    <button type="button" @click="deleteKas(k.id)" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Hapus">
+                                                        <i class="fa-regular fa-trash-can"></i>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                            <template x-if="!canManageKas()">
+                                                <span class="text-slate-300 text-xs">-</span>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW: 3. SEMUA TRANSAKSI (BUKU KAS UMUM) -->
+            <!-- ========================================== -->
+            <div x-show="currentView === 'semua_transaksi' || currentView === 'kas'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-book-bookmark text-teal-600"></i>
+                            <span>Buku Kas Umum (Semua Transaksi)</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Transparansi rekapitulasi arus kas masuk, pengeluaran, dan saldo kas bersama RW 05 Sukamaju.</p>
+                    </div>
+                    <template x-if="canManageKas()">
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="openModalKas('pemasukan')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-arrow-down"></i>
+                                <span>+ Pemasukan</span>
+                            </button>
+                            <button type="button" @click="openModalKas('pengeluaran')" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-arrow-up"></i>
+                                <span>+ Pengeluaran</span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- 3 Saldo Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Pemasukan</span>
+                        <span class="text-2xl font-extrabold text-emerald-600 mt-1 block" x-text="formatRupiah(kas.total_pemasukan)"></span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Pengeluaran</span>
+                        <span class="text-2xl font-extrabold text-rose-600 mt-1 block" x-text="formatRupiah(kas.total_pengeluaran)"></span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Saldo Akhir Bersama</span>
+                        <span class="text-2xl font-extrabold text-teal-600 mt-1 block" x-text="formatRupiah(kas.saldo)"></span>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="text" x-model="filterKas.search" placeholder="Cari di buku kas umum..." class="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs outline-none w-full sm:w-64 focus:border-teal-600">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select x-model="filterKas.tingkat" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 outline-none">
+                            <option value="">Semua Tingkat</option>
+                            <option value="RW">Kas RW</option>
+                            <option value="RT">Kas RT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table Semua Transaksi -->
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Tanggal</th>
+                                    <th class="py-3 px-4">Tipe Arus</th>
+                                    <th class="py-3 px-4">Tingkat</th>
+                                    <th class="py-3 px-4">Kategori</th>
+                                    <th class="py-3 px-4">Pihak Terkait</th>
+                                    <th class="py-3 px-4">Keterangan</th>
+                                    <th class="py-3 px-4 text-right">Nominal</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <template x-for="k in (kas.kas || []).filter(item => (!filterKas.tingkat || item.tingkat === filterKas.tingkat) && (!filterKas.search || item.keterangan.toLowerCase().includes(filterKas.search.toLowerCase()) || item.kategori.toLowerCase().includes(filterKas.search.toLowerCase()) || (item.pihak_terkait && item.pihak_terkait.toLowerCase().includes(filterKas.search.toLowerCase()))))" :key="k.id">
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="py-3 px-4 font-mono text-slate-500" x-text="formatDate(k.tanggal)"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                  :class="k.jenis === 'pemasukan' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                                                  x-text="k.jenis === 'pemasukan' ? 'Pemasukan (+)' : 'Pengeluaran (-)'"></span>
+                                        </td>
+                                        <td class="py-3 px-4 font-semibold text-slate-700" x-text="k.tingkat"></td>
+                                        <td class="py-3 px-4 font-bold text-slate-800" x-text="k.kategori"></td>
+                                        <td class="py-3 px-4 text-slate-600" x-text="k.pihak_terkait || '-'"></td>
+                                        <td class="py-3 px-4 text-slate-500 max-w-xs truncate" x-text="k.keterangan"></td>
+                                        <td class="py-3 px-4 text-right font-mono font-extrabold"
+                                            :class="k.jenis === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'"
+                                            x-text="(k.jenis === 'pemasukan' ? '+ ' : '- ') + formatRupiah(k.jumlah)"></td>
+                                        <td class="py-3 px-4 text-center">
+                                            <template x-if="canManageKas()">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <button type="button" @click="openModalKas(k.jenis, k)" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" title="Edit">
+                                                        <i class="fa-regular fa-pen-to-square"></i>
+                                                    </button>
+                                                    <button type="button" @click="deleteKas(k.id)" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Hapus">
+                                                        <i class="fa-regular fa-trash-can"></i>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                            <template x-if="!canManageKas()">
+                                                <span class="text-slate-300 text-xs">-</span>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW: 4. KATEGORI KAS -->
+            <!-- ========================================== -->
+            <div x-show="currentView === 'kategori_kas'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-tags text-amber-500"></i>
+                            <span>Master Data Kategori Kas</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Klasifikasi pos pemasukan dan pengeluaran kas lingkungan.</p>
+                    </div>
+                    <template x-if="canManageFinance()">
+                        <button type="button" @click="openModalKategori()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>+ Tambah Kategori</span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Tabs Filter Kategori -->
+                <div class="flex items-center gap-2 border-b border-slate-200 pb-2 text-xs font-bold">
+                    <button type="button" @click="filterKategori.jenis = ''" :class="filterKategori.jenis === '' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'" class="px-3 py-1.5 rounded-xl transition">Semua Kategori</button>
+                    <button type="button" @click="filterKategori.jenis = 'pemasukan'" :class="filterKategori.jenis === 'pemasukan' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-slate-100'" class="px-3 py-1.5 rounded-xl transition">Pemasukan Saja</button>
+                    <button type="button" @click="filterKategori.jenis = 'pengeluaran'" :class="filterKategori.jenis === 'pengeluaran' ? 'bg-rose-600 text-white' : 'text-slate-500 hover:bg-slate-100'" class="px-3 py-1.5 rounded-xl transition">Pengeluaran Saja</button>
+                </div>
+
+                <!-- Table Kategori -->
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Jenis</th>
+                                    <th class="py-3 px-4">Nama Kategori</th>
+                                    <th class="py-3 px-4">Tingkat</th>
+                                    <th class="py-3 px-4">Deskripsi / Peruntukan</th>
+                                    <th class="py-3 px-4 text-center">Status</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <template x-for="kat in (kategoriKas || []).filter(k => !filterKategori.jenis || k.jenis === filterKategori.jenis)" :key="kat.id">
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                  :class="kat.jenis === 'pemasukan' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                                                  x-text="kat.jenis === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran'"></span>
+                                        </td>
+                                        <td class="py-3 px-4 font-bold text-slate-800" x-text="kat.nama"></td>
+                                        <td class="py-3 px-4 font-semibold text-slate-600" x-text="kat.tingkat"></td>
+                                        <td class="py-3 px-4 text-slate-500 max-w-sm truncate" x-text="kat.deskripsi || '-'"></td>
+                                        <td class="py-3 px-4 text-center">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                  :class="kat.is_aktif ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-400'"
+                                                  x-text="kat.is_aktif ? 'Aktif' : 'Non-aktif'"></span>
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <template x-if="canManageFinance()">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <button type="button" @click="openModalKategori(kat)" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" title="Edit">
+                                                        <i class="fa-regular fa-pen-to-square"></i>
+                                                    </button>
+                                                    <button type="button" @click="deleteKategori(kat.id)" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Hapus">
+                                                        <i class="fa-regular fa-trash-can"></i>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                            <template x-if="!canManageFinance()">
+                                                <span class="text-slate-300 text-xs">-</span>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW: 5. KELOLA TAGIHAN WARGA -->
+            <!-- ========================================== -->
+            <div x-show="currentView === 'tagihan_warga'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-file-invoice-dollar text-blue-600"></i>
+                            <span>Kelola Tagihan & Iuran Warga</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Pencatatan iuran wajib bulanan, pemantauan status lunas/tertunggak, dan konfirmasi pembayaran digital.</p>
+                    </div>
+                    <template x-if="canManageFinance()">
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="modalGenerateTagihan = true" class="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>⚡ Generate Massal</span>
+                            </button>
+                            <button type="button" @click="openModalTagihan()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md transition inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>+ Buat Tagihan</span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- 4 Stats Cards Tagihan -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[10px] font-bold text-slate-400 block uppercase">Total Tagihan</span>
+                        <span class="text-xl font-extrabold text-slate-800 mt-1 block" x-text="(tagihanWarga.stats?.total_tagihan || 0) + ' Tagihan'"></span>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[10px] font-bold text-emerald-600 block uppercase">Lunas</span>
+                        <span class="text-xl font-extrabold text-emerald-600 mt-1 block" x-text="(tagihanWarga.stats?.total_lunas || 0)"></span>
+                        <span class="text-[10px] text-slate-400 mt-0.5 block" x-text="formatRupiah(tagihanWarga.stats?.nominal_terkumpul || 0)"></span>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[10px] font-bold text-amber-600 block uppercase">Menunggu Verif</span>
+                        <span class="text-xl font-extrabold text-amber-600 mt-1 block" x-text="(tagihanWarga.stats?.total_menunggu_verifikasi || 0)"></span>
+                        <span class="text-[10px] text-amber-600 font-semibold mt-0.5 block">Ada bukti transfer</span>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[10px] font-bold text-rose-600 block uppercase">Belum Bayar</span>
+                        <span class="text-xl font-extrabold text-rose-600 mt-1 block" x-text="(tagihanWarga.stats?.total_belum_bayar || 0)"></span>
+                        <span class="text-[10px] text-rose-500 font-semibold mt-0.5 block" x-text="formatRupiah(tagihanWarga.stats?.nominal_tertunggak || 0)"></span>
+                    </div>
+                </div>
+
+                <!-- Tabs & Filter -->
+                <div class="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="filterTagihan.tab = 'all'" :class="filterTagihan.tab === 'all' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'" class="px-3 py-1.5 rounded-xl transition">
+                            Semua Tagihan Warga
+                        </button>
+                        <button type="button" @click="filterTagihan.tab = 'my'" :class="filterTagihan.tab === 'my' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'" class="px-3 py-1.5 rounded-xl transition">
+                            Tagihan Saya (<span x-text="currentUser.name"></span>)
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select x-model="filterTagihan.status" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 outline-none">
+                            <option value="">Semua Status</option>
+                            <option value="belum_bayar">Belum Bayar</option>
+                            <option value="menunggu_verifikasi">Menunggu Verifikasi</option>
+                            <option value="lunas">Lunas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table Tagihan -->
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Kode & Judul</th>
+                                    <th class="py-3 px-4">Warga & Rumah</th>
+                                    <th class="py-3 px-4">Periode</th>
+                                    <th class="py-3 px-4">Nominal</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Pembayaran</th>
+                                    <th class="py-3 px-4 text-center">Aksi & Bayar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <template x-for="t in (tagihanWarga.tagihans || []).filter(item => (!filterTagihan.status || item.status === filterTagihan.status) && (filterTagihan.tab !== 'my' || (item.user_id === currentUser.id || item.nama_warga.toLowerCase().includes(currentUser.name.toLowerCase()))))" :key="t.id">
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="py-3 px-4">
+                                            <span class="font-mono text-[10px] font-bold text-emerald-700 block" x-text="t.kode_tagihan"></span>
+                                            <span class="font-bold text-slate-800 text-xs" x-text="t.judul"></span>
+                                            <span class="text-[10px] text-slate-400 block" x-text="t.kategori"></span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="font-bold text-slate-800 block" x-text="t.nama_warga"></span>
+                                            <span class="text-[11px] text-slate-500" x-text="t.nomor_rumah || ('RT ' + t.rt)"></span>
+                                        </td>
+                                        <td class="py-3 px-4 font-semibold text-slate-600" x-text="t.periode"></td>
+                                        <td class="py-3 px-4 font-mono font-extrabold text-slate-900 text-xs" x-text="formatRupiah(t.nominal)"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1"
+                                                  :class="t.status === 'lunas' ? 'bg-emerald-100 text-emerald-800' : (t.status === 'menunggu_verifikasi' ? 'bg-amber-100 text-amber-800 animate-pulse' : 'bg-rose-100 text-rose-800')">
+                                                <i class="fa-solid" :class="t.status === 'lunas' ? 'fa-check' : (t.status === 'menunggu_verifikasi' ? 'fa-clock' : 'fa-xmark')"></i>
+                                                <span x-text="t.status === 'lunas' ? 'Lunas' : (t.status === 'menunggu_verifikasi' ? 'Menunggu Verif' : 'Belum Bayar')"></span>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="text-[11px] text-slate-700 block" x-text="t.metode_pembayaran || '-'"></span>
+                                            <span class="text-[10px] text-slate-400" x-text="t.diverifikasi_oleh ? 'Verif: ' + t.diverifikasi_oleh : ''"></span>
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <div class="flex items-center justify-center gap-1.5">
+                                                <!-- Tombol Bayar untuk Warga / Status belum_bayar -->
+                                                <template x-if="t.status === 'belum_bayar'">
+                                                    <button type="button" @click="openModalBayar(t)" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs inline-flex items-center gap-1">
+                                                        <i class="fa-solid fa-credit-card text-[10px]"></i>
+                                                        <span>Bayar Sekarang</span>
+                                                    </button>
+                                                </template>
+
+                                                <!-- Tombol Verifikasi untuk Pengurus jika menunggu_verifikasi -->
+                                                <template x-if="t.status === 'menunggu_verifikasi' && canVerifyPayment()">
+                                                    <button type="button" @click="openModalVerifikasi(t)" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] shadow-xs inline-flex items-center gap-1">
+                                                        <i class="fa-solid fa-check text-[10px]"></i>
+                                                        <span>Verifikasi</span>
+                                                    </button>
+                                                </template>
+
+                                                <!-- Tombol Edit & Hapus untuk Pengurus -->
+                                                <template x-if="canManageFinance()">
+                                                    <div class="flex items-center gap-1">
+                                                        <button type="button" @click="openModalTagihan(t)" class="p-1 rounded text-slate-400 hover:text-emerald-600" title="Edit">
+                                                            <i class="fa-regular fa-pen-to-square"></i>
+                                                        </button>
+                                                        <button type="button" @click="deleteTagihan(t.id)" class="p-1 rounded text-slate-400 hover:text-rose-600" title="Hapus">
+                                                            <i class="fa-regular fa-trash-can"></i>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW: 6. KELOLA REKENING & QRIS -->
+            <!-- ========================================== -->
+            <div x-show="currentView === 'rekening_kas'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-qrcode text-purple-600"></i>
+                            <span>Rekening Kas & QRIS Resmi Lingkungan</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Daftar nomor rekening bank resmi dan barcode QRIS untuk mempermudah transfer iuran warga secara digital.</p>
+                    </div>
+                    <template x-if="canManageFinance()">
+                        <button type="button" @click="openModalRekening()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>+ Tambah Rekening / QRIS</span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Grid Kartu Rekening & QRIS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <template x-for="r in (rekeningKas || [])" :key="r.id">
+                        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between hover:border-purple-300 transition relative overflow-hidden">
+                            <div class="space-y-4">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                                              :class="r.tingkat === 'RW' ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'"
+                                              x-text="'Kas ' + r.tingkat + (r.tingkat === 'RT' ? ' ' + r.rt : ' 05')"></span>
+                                        <h3 class="font-bold text-slate-900 text-sm mt-1" x-text="r.nama_bank"></h3>
+                                    </div>
+                                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-sm"
+                                         :class="r.tipe === 'qris' ? 'bg-purple-50 text-purple-600' : (r.tipe === 'ewallet' ? 'bg-lime-50 text-lime-600' : 'bg-blue-50 text-blue-600')">
+                                        <i class="fa-solid" :class="r.tipe === 'qris' ? 'fa-qrcode' : (r.tipe === 'ewallet' ? 'fa-wallet' : 'fa-building-columns')"></i>
+                                    </div>
+                                </div>
+
+                                <!-- QRIS Image Preview jika tipe qris -->
+                                <template x-if="r.tipe === 'qris' && r.qris_image">
+                                    <div class="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer group"
+                                         @click="modalQrPreview = r">
+                                        <img :src="r.qris_image" alt="QRIS" class="w-36 h-36 object-contain rounded-xl shadow-xs group-hover:scale-105 transition">
+                                        <span class="text-[10px] font-bold text-purple-700 mt-2 flex items-center gap-1">
+                                            <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                            <span>Klik untuk Perbesar Barcode</span>
+                                        </span>
+                                    </div>
+                                </template>
+
+                                <!-- Rekening Info Card -->
+                                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Nomor Rekening / ID</span>
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-mono font-extrabold text-slate-900 text-base tracking-wide" x-text="r.nomor_rekening"></span>
+                                        <button type="button" @click="navigator.clipboard.writeText(r.nomor_rekening); showToast('Nomor rekening disalin ke clipboard!')" class="p-1 rounded-md text-slate-400 hover:text-purple-600" title="Salin Nomor">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <span class="text-xs font-semibold text-slate-600 block" x-text="'a/n ' + r.atas_nama"></span>
+                                </div>
+
+                                <template x-if="r.keterangan">
+                                    <p class="text-xs text-slate-500" x-text="r.keterangan"></p>
+                                </template>
+                            </div>
+
+                            <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                                <span class="inline-flex items-center gap-1 font-bold text-[11px]"
+                                      :class="r.is_aktif ? 'text-teal-600' : 'text-slate-400'">
+                                    <span class="w-2 h-2 rounded-full" :class="r.is_aktif ? 'bg-teal-500' : 'bg-slate-300'"></span>
+                                    <span x-text="r.is_aktif ? 'Aktif Menerima' : 'Non-aktif'"></span>
+                                </span>
+
+                                <template x-if="canManageFinance()">
+                                    <div class="flex items-center gap-1">
+                                        <button type="button" @click="openModalRekening(r)" class="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50" title="Edit">
+                                            <i class="fa-regular fa-pen-to-square"></i>
+                                        </button>
+                                        <button type="button" @click="deleteRekening(r.id)" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Hapus">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -682,7 +1323,12 @@
                     <button type="button" @click="currentView = 'dashboard'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Dashboard</button>
                     <button type="button" @click="currentView = 'warga'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Data Warga</button>
                     <button type="button" @click="currentView = 'surat'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Surat Menyurat</button>
-                    <button type="button" @click="currentView = 'kas'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Kas RW & RT</button>
+                    <button type="button" @click="currentView = 'pemasukan'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block text-emerald-700">💰 Pemasukan Kas</button>
+                    <button type="button" @click="currentView = 'pengeluaran'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block text-rose-700">💸 Pengeluaran Kas</button>
+                    <button type="button" @click="currentView = 'semua_transaksi'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block text-teal-700">📖 Semua Transaksi</button>
+                    <button type="button" @click="currentView = 'kategori_kas'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">🏷️ Kategori Kas</button>
+                    <button type="button" @click="currentView = 'tagihan_warga'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block text-blue-700">📑 Kelola Tagihan</button>
+                    <button type="button" @click="currentView = 'rekening_kas'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block text-purple-700">📱 Rekening & QRIS</button>
                     <button type="button" @click="currentView = 'ronda'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Keamanan & Ronda</button>
                     <button type="button" @click="currentView = 'bank_sampah'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Bank Sampah</button>
                     <button type="button" @click="currentView = 'umkm'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Pasar UMKM</button>
@@ -780,46 +1426,469 @@
         </div>
     </div>
 
-    <!-- MODAL: CATAT KAS BARU -->
-    <div x-show="modalKas" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalKas = false">
-            <h3 class="text-base font-extrabold text-slate-900">Catat Transaksi Kas</h3>
+    <!-- ========================================== -->
+    <!-- MODALS KEUANGAN & TRANSAKSI -->
+    <!-- ========================================== -->
+
+    <!-- MODAL 1: CATAT / EDIT KAS (PEMASUKAN & PENGELUARAN) -->
+    <div x-show="modalKas.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalKas.show = false">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900" x-text="modalKas.mode === 'edit' ? 'Edit Catatan Kas' : (modalKas.defaultJenis === 'pemasukan' ? 'Catat Pemasukan Kas' : 'Catat Pengeluaran Kas')"></h3>
+                <button type="button" @click="modalKas.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
             <form @submit.prevent="submitKas($event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Tingkat</label>
-                    <select name="tingkat" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
-                        <option value="RW">Kas RW</option>
-                        <option value="RT">Kas RT</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Tingkat Kas</label>
+                        <select name="tingkat" :value="modalKas.data?.tingkat || 'RW'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="RW">Kas RW 05</option>
+                            <option value="RT">Kas RT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">RT</label>
+                        <input type="text" name="rt" :value="modalKas.data?.rt || '01'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Jenis Arus</label>
+                        <select name="jenis" :value="modalKas.data?.jenis || modalKas.defaultJenis" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white font-bold"
+                                :class="(modalKas.data?.jenis || modalKas.defaultJenis) === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'">
+                            <option value="pemasukan">Pemasukan (+)</option>
+                            <option value="pengeluaran">Pengeluaran (-)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Metode</label>
+                        <select name="metode" :value="modalKas.data?.metode || 'Tunai'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="Tunai">Tunai</option>
+                            <option value="Transfer Bank">Transfer Bank</option>
+                            <option value="QRIS">QRIS</option>
+                            <option value="E-Wallet">E-Wallet</option>
+                        </select>
+                    </div>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Jenis Transaksi</label>
-                    <select name="jenis" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
-                        <option value="pemasukan">Pemasukan (Uang Masuk)</option>
-                        <option value="pengeluaran">Pengeluaran (Biaya Operasional)</option>
-                    </select>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Kategori Kas</label>
+                    <input type="text" name="kategori" required :value="modalKas.data?.kategori || ''" placeholder="Pilih atau ketik kategori..." list="listKategoriKas" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    <datalist id="listKategoriKas">
+                        <template x-for="kat in kategoriKas" :key="kat.id">
+                            <option :value="kat.nama"></option>
+                        </template>
+                    </datalist>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Nominal (Rp)</label>
+                        <input type="number" name="jumlah" min="1000" step="1000" required :value="modalKas.data?.jumlah || ''" placeholder="100000" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-mono outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Tanggal</label>
+                        <input type="date" name="tanggal" required :value="modalKas.data?.tanggal ? modalKas.data.tanggal.split('T')[0] : new Date().toISOString().split('T')[0]" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Penyetor / Penerima (Pihak Terkait)</label>
+                    <input type="text" name="pihak_terkait" :value="modalKas.data?.pihak_terkait || ''" placeholder="Nama warga / toko penyedia..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Uraian / Keterangan</label>
+                    <textarea name="keterangan" required rows="2" placeholder="Uraian detail transaksi..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none" x-text="modalKas.data?.keterangan || ''"></textarea>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Bukti Transaksi (URL / Foto Kwitansi)</label>
+                    <input type="text" name="bukti_transaksi" :value="modalKas.data?.bukti_transaksi || ''" placeholder="https://..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="modalKas.show = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Simpan Transaksi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: MASTER KATEGORI KAS -->
+    <div x-show="modalKategori.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalKategori.show = false">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900" x-text="modalKategori.mode === 'edit' ? 'Edit Kategori Kas' : 'Tambah Kategori Kas Baru'"></h3>
+                <button type="button" @click="modalKategori.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form @submit.prevent="submitKategori($event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nama Kategori</label>
+                    <input type="text" name="nama" required :value="modalKategori.data?.nama || ''" placeholder="Contoh: Iuran Kebersihan Lingkungan" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Jenis Arus</label>
+                        <select name="jenis" :value="modalKategori.data?.jenis || 'pemasukan'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="pemasukan">Pemasukan (+)</option>
+                            <option value="pengeluaran">Pengeluaran (-)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Tingkat</label>
+                        <select name="tingkat" :value="modalKategori.data?.tingkat || 'RW'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="RW">Tingkat RW</option>
+                            <option value="RT">Tingkat RT</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Deskripsi</label>
+                    <textarea name="deskripsi" rows="2" placeholder="Keterangan peruntukan kategori..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none" x-text="modalKategori.data?.deskripsi || ''"></textarea>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="is_aktif" id="kat_aktif" value="1" :checked="modalKategori.data?.is_aktif !== false" class="rounded text-emerald-600">
+                    <label for="kat_aktif" class="font-bold text-slate-700 cursor-pointer">Status Kategori Aktif</label>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="modalKategori.show = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Simpan Kategori</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: BUAT / EDIT TAGIHAN WARGA -->
+    <div x-show="modalTagihan.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalTagihan.show = false">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900" x-text="modalTagihan.mode === 'edit' ? 'Edit Tagihan Warga' : 'Buat Tagihan Baru'"></h3>
+                <button type="button" @click="modalTagihan.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form @submit.prevent="submitTagihan($event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Judul Tagihan</label>
+                    <input type="text" name="judul" required :value="modalTagihan.data?.judul || 'Iuran Warga Bulanan'" placeholder="Contoh: Iuran Kebersihan RT 01 Bulan November" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Tingkat</label>
+                        <select name="tingkat" :value="modalTagihan.data?.tingkat || 'RT'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="RT">Tingkat RT</option>
+                            <option value="RW">Tingkat RW</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">RT</label>
+                        <input type="text" name="rt" :value="modalTagihan.data?.rt || '01'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nama Warga Penerima Tagihan</label>
+                    <input type="text" name="nama_warga" required :value="modalTagihan.data?.nama_warga || ''" placeholder="Pilih atau ketik nama warga..." list="listWargaTagihan" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    <datalist id="listWargaTagihan">
+                        <template x-for="w in (wargas || [])" :key="w.id">
+                            <option :value="w.nama_lengkap"></option>
+                        </template>
+                    </datalist>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nomor Rumah / Alamat</label>
+                    <input type="text" name="nomor_rumah" :value="modalTagihan.data?.nomor_rumah || ''" placeholder="Contoh: Blok B3 No. 12" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Periode</label>
+                        <input type="text" name="periode" required :value="modalTagihan.data?.periode || 'November 2026'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Nominal (Rp)</label>
+                        <input type="number" name="nominal" min="5000" step="5000" required :value="modalTagihan.data?.nominal || 50000" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-mono outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Kategori</label>
+                        <input type="text" name="kategori" required :value="modalTagihan.data?.kategori || 'Iuran Kebersihan Lingkungan'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Jatuh Tempo</label>
+                        <input type="date" name="tanggal_jatuh_tempo" :value="modalTagihan.data?.tanggal_jatuh_tempo ? modalTagihan.data.tanggal_jatuh_tempo.split('T')[0] : ''" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                </div>
+                <template x-if="modalTagihan.mode === 'edit'">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Status Tagihan</label>
+                        <select name="status" :value="modalTagihan.data?.status || 'belum_bayar'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white font-bold">
+                            <option value="belum_bayar">Belum Bayar</option>
+                            <option value="menunggu_verifikasi">Menunggu Verifikasi</option>
+                            <option value="lunas">Lunas</option>
+                        </select>
+                    </div>
+                </template>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Catatan Tambahan</label>
+                    <textarea name="catatan" rows="2" placeholder="Catatan tagihan..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none" x-text="modalTagihan.data?.catatan || ''"></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="modalTagihan.show = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Simpan Tagihan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: GENERATE TAGIHAN MASSAL -->
+    <div x-show="modalGenerateTagihan" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalGenerateTagihan = false">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+                    <span>Generate Tagihan Massal</span>
+                </h3>
+                <button type="button" @click="modalGenerateTagihan = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-500">Menerbitkan tagihan serentak secara otomatis kepada seluruh warga terdaftar tanpa duplikasi.</p>
+            <form @submit.prevent="submitGenerateTagihan($event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Judul Tagihan</label>
+                    <input type="text" name="judul" required value="Iuran Warga & Kebersihan Bulan November 2026" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Tingkat</label>
+                        <select name="tingkat" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="RT">Tingkat RT</option>
+                            <option value="RW">Tingkat RW</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Target RT</label>
+                        <select name="rt" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="01">RT 01</option>
+                            <option value="02">RT 02</option>
+                            <option value="03">RT 03</option>
+                            <option value="all">Semua RT di RW 05</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Periode</label>
+                        <input type="text" name="periode" required value="November 2026" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Nominal per KK (Rp)</label>
+                        <input type="number" name="nominal" min="5000" step="5000" required value="50000" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-mono outline-none">
+                    </div>
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 uppercase mb-1">Kategori</label>
-                    <input type="text" name="kategori" required placeholder="Contoh: Iuran Warga Bulanan" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                    <input type="text" name="kategori" value="Iuran Kebersihan Lingkungan" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="modalGenerateTagihan = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Generate Sekarang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: BAYAR TAGIHAN (UNTUK WARGA) -->
+    <div x-show="modalBayarTagihan" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl" @click.away="modalBayarTagihan = null">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-credit-card text-emerald-600"></i>
+                    <span>Konfirmasi Pembayaran Tagihan</span>
+                </h3>
+                <button type="button" @click="modalBayarTagihan = null" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Detail Tagihan Summary -->
+            <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between text-xs">
+                <div>
+                    <span class="font-mono text-[10px] font-bold text-emerald-800" x-text="modalBayarTagihan?.kode_tagihan"></span>
+                    <h4 class="font-bold text-slate-900 text-sm mt-0.5" x-text="modalBayarTagihan?.judul"></h4>
+                    <span class="text-slate-600 text-[11px]" x-text="'Warga: ' + modalBayarTagihan?.nama_warga"></span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] text-slate-500 uppercase font-bold block">Total Bayar</span>
+                    <span class="text-lg font-mono font-black text-emerald-700" x-text="formatRupiah(modalBayarTagihan?.nominal)"></span>
+                </div>
+            </div>
+
+            <!-- Rekening Pilihan -->
+            <div class="space-y-2">
+                <label class="block font-bold text-slate-700 text-xs uppercase">Tujuan Transfer / Scan QRIS</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto text-xs">
+                    <template x-for="rek in (rekeningKas || [])" :key="rek.id">
+                        <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between cursor-pointer hover:border-emerald-500"
+                             @click="modalBayarTagihan.rekening_id = rek.id; modalBayarTagihan.metode_pembayaran = (rek.tipe === 'qris' ? 'QRIS Resmi' : ('Transfer ' + rek.nama_bank))"
+                             :class="modalBayarTagihan?.rekening_id === rek.id ? 'border-emerald-600 bg-emerald-50/50 ring-1 ring-emerald-600' : ''">
+                            <div>
+                                <span class="font-bold text-slate-800 text-[11px] block" x-text="rek.nama_bank"></span>
+                                <span class="font-mono text-[10px] text-slate-600 block" x-text="rek.nomor_rekening"></span>
+                                <span class="text-[9px] text-slate-400 block" x-text="'a/n ' + rek.atas_nama"></span>
+                            </div>
+                            <span class="text-xs" :class="modalBayarTagihan?.rekening_id === rek.id ? 'text-emerald-600' : 'text-slate-300'">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <form @submit.prevent="submitBayarTagihan($event)" class="space-y-3 text-xs">
+                <input type="hidden" name="rekening_id" :value="modalBayarTagihan?.rekening_id || ''">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Metode Pembayaran</label>
+                    <input type="text" name="metode_pembayaran" required :value="modalBayarTagihan?.metode_pembayaran || 'QRIS Resmi Kas RW'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Nominal (Rp)</label>
-                    <input type="number" name="jumlah" min="1000" required placeholder="100000" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tanggal Bayar</label>
+                    <input type="date" name="tanggal_bayar" required :value="modalBayarTagihan?.tanggal_bayar || new Date().toISOString().split('T')[0]" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Tanggal</label>
-                    <input type="date" name="tanggal" required value="2026-11-06" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Bukti Transfer (Foto Struk / Kwitansi / URL)</label>
+                    <input type="text" name="bukti_bayar" :value="modalBayarTagihan?.bukti_bayar || ''" placeholder="https://..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Catatan Tambahan</label>
+                    <input type="text" name="catatan" :value="modalBayarTagihan?.catatan || ''" placeholder="Keterangan konfirmasi..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="modalBayarTagihan = null" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Kirim Konfirmasi Bayar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: VERIFIKASI TAGIHAN (BENDAHARA & SUPERADMIN) -->
+    <div x-show="modalVerifikasiTagihan" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalVerifikasiTagihan = null">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-blue-600"></i>
+                    <span>Verifikasi Pembayaran Iuran</span>
+                </h3>
+                <button type="button" @click="modalVerifikasiTagihan = null" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span class="font-mono text-[10px] text-slate-400 font-bold block" x-text="modalVerifikasiTagihan?.kode_tagihan"></span>
+                    <h4 class="font-bold text-slate-900 text-sm" x-text="modalVerifikasiTagihan?.judul"></h4>
+                    <p class="text-slate-600" x-text="'Warga: ' + modalVerifikasiTagihan?.nama_warga"></p>
+                    <p class="font-mono font-bold text-emerald-700 text-sm" x-text="'Nominal: ' + formatRupiah(modalVerifikasiTagihan?.nominal)"></p>
+                    <p class="text-[11px] text-slate-500" x-text="'Metode: ' + (modalVerifikasiTagihan?.metode_pembayaran || '-')"></p>
+                </div>
+
+                <template x-if="modalVerifikasiTagihan?.bukti_bayar">
+                    <div class="space-y-1">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase block">Bukti Transfer Warga:</span>
+                        <a :href="modalVerifikasiTagihan?.bukti_bayar" target="_blank" class="block rounded-xl overflow-hidden border border-slate-200 hover:opacity-90 transition">
+                            <img :src="modalVerifikasiTagihan?.bukti_bayar" alt="Bukti Transfer" class="w-full h-40 object-cover">
+                        </a>
+                    </div>
+                </template>
+
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Catatan Verifikasi</label>
+                    <input type="text" x-model="modalVerifikasiTagihan.catatan_verif" placeholder="Catatan untuk warga..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" @click="submitVerifikasiTagihan(modalVerifikasiTagihan.id, 'belum_bayar', modalVerifikasiTagihan.catatan_verif)" class="px-4 py-2 rounded-xl bg-rose-50 text-rose-700 font-bold hover:bg-rose-100 transition">
+                        ✗ Tolak Bukti
+                    </button>
+                    <button type="button" @click="submitVerifikasiTagihan(modalVerifikasiTagihan.id, 'lunas', modalVerifikasiTagihan.catatan_verif)" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-md transition">
+                        ✓ Setujui (LUNAS)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 7: REKENING & QRIS KAS -->
+    <div x-show="modalRekening.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalRekening.show = false">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900" x-text="modalRekening.mode === 'edit' ? 'Edit Rekening / QRIS' : 'Tambah Rekening / QRIS Baru'"></h3>
+                <button type="button" @click="modalRekening.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form @submit.prevent="submitRekening($event)" class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Tingkat</label>
+                        <select name="tingkat" :value="modalRekening.data?.tingkat || 'RW'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                            <option value="RW">Kas RW 05</option>
+                            <option value="RT">Kas RT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">RT</label>
+                        <input type="text" name="rt" :value="modalRekening.data?.rt || '01'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tipe Akun</label>
+                    <select name="tipe" :value="modalRekening.data?.tipe || 'bank'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none bg-white">
+                        <option value="bank">Rekening Bank (BCA, Mandiri, BRI, BNI)</option>
+                        <option value="qris">Barcode QRIS (Semua Bank / E-Wallet)</option>
+                        <option value="ewallet">Dompet Digital (GoPay, OVO, DANA)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nama Bank / Provider</label>
+                    <input type="text" name="nama_bank" required :value="modalRekening.data?.nama_bank || ''" placeholder="Contoh: Bank Central Asia (BCA)" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nomor Rekening / ID Akun</label>
+                    <input type="text" name="nomor_rekening" required :value="modalRekening.data?.nomor_rekening || ''" placeholder="Contoh: 7120-8899-01" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Atas Nama (Pemilik)</label>
+                    <input type="text" name="atas_nama" required :value="modalRekening.data?.atas_nama || 'KAS RW 05 SUKAMAJU'" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Gambar QRIS (URL Gambar)</label>
+                    <input type="text" name="qris_image" :value="modalRekening.data?.qris_image || ''" placeholder="Kosongkan untuk auto-generate barcode..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 uppercase mb-1">Keterangan</label>
-                    <input type="text" name="keterangan" required placeholder="Keterangan transaksi..." class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                    <input type="text" name="keterangan" :value="modalRekening.data?.keterangan || ''" placeholder="Keterangan..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none">
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <button type="button" @click="modalKas = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Simpan Kas</button>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="is_aktif" id="rek_aktif" value="1" :checked="modalRekening.data?.is_aktif !== false" class="rounded text-purple-600">
+                    <label for="rek_aktif" class="font-bold text-slate-700 cursor-pointer">Status Aktif Menerima Pembayaran</label>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="modalRekening.show = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-purple-600 text-white font-bold shadow-md">Simpan Rekening</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL 8: PREVIEW / SCAN QRIS FULLSCREEN -->
+    <div x-show="modalQrPreview" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center" @click.away="modalQrPreview = null">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span class="text-xs font-extrabold uppercase text-purple-700 tracking-wider">Scan Barcode QRIS Resmi</span>
+                <button type="button" @click="modalQrPreview = null" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div>
+                <h4 class="font-extrabold text-slate-900 text-base" x-text="modalQrPreview?.nama_bank"></h4>
+                <p class="text-xs text-slate-500" x-text="'a/n ' + modalQrPreview?.atas_nama"></p>
+            </div>
+            <div class="p-4 bg-white rounded-2xl border-2 border-purple-200 shadow-md inline-block">
+                <img :src="modalQrPreview?.qris_image" alt="QRIS Code" class="w-64 h-64 object-contain mx-auto rounded-lg">
+            </div>
+            <div class="p-3 rounded-xl bg-purple-50 text-purple-900 text-[11px] font-semibold text-left space-y-1">
+                <p>1. Buka aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau E-Wallet (GoPay, OVO, DANA, ShopeePay).</p>
+                <p>2. Arahkan kamera ke kode QRIS di atas.</p>
+                <p>3. Masukkan nominal tagihan iuran dan selesaikan transaksi.</p>
+            </div>
+            <button type="button" @click="modalQrPreview = null" class="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs">
+                Tutup QRIS
+            </button>
         </div>
     </div>
 

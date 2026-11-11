@@ -7,12 +7,13 @@ const API_BASE = '/api';
 
 window.appState = () => ({
     // State Navigasi
-    currentView: 'dashboard', // dashboard, warga, surat, kas, ronda, bank_sampah, umkm, posyandu, kegiatan, rukem, aspirasi, aset, koperasi, log_aktivitas, pengaturan, welcome
+    // views: dashboard, pemasukan, pengeluaran, semua_transaksi, kategori_kas, tagihan_warga, rekening_kas, warga, surat, ronda, bank_sampah, umkm, posyandu, kegiatan, rukem, aspirasi, aset, koperasi, log_aktivitas, pengaturan, welcome
+    currentView: 'dashboard',
     sidebarOpen: false,
     mobileNav: false,
     backendStatus: 'checking', // checking, connected, offline
 
-    // User Session & Role (Default Ketua RW atau Warga)
+    // User Session & Role (Default Ketua RW)
     currentUser: {
         id: 2,
         name: 'H. Bambang Sutrisno, S.E.',
@@ -39,7 +40,10 @@ window.appState = () => ({
     stats: {},
     wargas: [],
     surats: [],
-    kas: { kas: [], total_pemasukan: 0, total_pengeluaran: 0, saldo: 0 },
+    kas: { kas: [], total_pemasukan: 0, total_pengeluaran: 0, saldo: 0, kategori_pemasukan: [], kategori_pengeluaran: [], rekenings: [] },
+    kategoriKas: [],
+    tagihanWarga: { tagihans: [], stats: {}, wargas: [], rekenings: [] },
+    rekeningKas: [],
     rondas: [],
     panicAlerts: [],
     bankSampah: { kategoris: [], transaksis: [] },
@@ -54,10 +58,24 @@ window.appState = () => ({
     logs: [],
     pengaturan: {},
 
-    // UI Modals
+    // UI Modals Keuangan
+    modalKas: { show: false, mode: 'create', data: null, defaultJenis: 'pemasukan' },
+    modalKategori: { show: false, mode: 'create', data: null },
+    modalTagihan: { show: false, mode: 'create', data: null },
+    modalGenerateTagihan: false,
+    modalBayarTagihan: null,
+    modalVerifikasiTagihan: null,
+    modalRekening: { show: false, mode: 'create', data: null },
+    modalQrPreview: null,
+
+    // Filter & Search State Keuangan
+    filterKas: { search: '', kategori: '', tingkat: '', rt: '' },
+    filterTagihan: { status: '', search: '', tab: 'all' }, // tab: all / my
+    filterKategori: { jenis: '' },
+
+    // Modals Umum
     modalSurat: false,
     modalCetakSurat: null,
-    modalKas: false,
     modalPanic: false,
     modalSetorSampah: false,
     modalUmkm: false,
@@ -85,6 +103,23 @@ window.appState = () => ({
         }, 4000);
     },
 
+    // Hak Akses Role Helpers
+    canManageKas() {
+        return ['superadmin', 'rw', 'rt', 'bendahara_rw', 'bendahara_rt'].includes(this.currentUser.role);
+    },
+
+    canManageFinance() {
+        return ['superadmin', 'bendahara_rw', 'bendahara_rt'].includes(this.currentUser.role);
+    },
+
+    canVerifyPayment() {
+        return ['superadmin', 'rw', 'bendahara_rw', 'bendahara_rt'].includes(this.currentUser.role);
+    },
+
+    isWarga() {
+        return this.currentUser.role === 'warga';
+    },
+
     async checkBackend() {
         try {
             const res = await axios.get(`${API_BASE}/stats`);
@@ -101,7 +136,7 @@ window.appState = () => ({
         const found = this.rolesList.find(r => r.key === roleKey);
         if (found) {
             this.currentUser = {
-                id: roleKey === 'superadmin' ? 1 : (roleKey === 'rw' ? 2 : (roleKey === 'rt' ? 3 : 8)),
+                id: roleKey === 'superadmin' ? 1 : (roleKey === 'rw' ? 2 : (roleKey === 'rt' ? 3 : (roleKey === 'bendahara_rw' ? 5 : (roleKey === 'bendahara_rt' ? 7 : 8)))),
                 name: found.name,
                 email: found.email,
                 role: found.key,
@@ -126,6 +161,9 @@ window.appState = () => ({
                 wargaRes,
                 suratRes,
                 kasRes,
+                kategoriRes,
+                tagihanRes,
+                rekeningRes,
                 rondaRes,
                 sampahRes,
                 umkmRes,
@@ -141,6 +179,9 @@ window.appState = () => ({
                 axios.get(`${API_BASE}/warga`),
                 axios.get(`${API_BASE}/surat`),
                 axios.get(`${API_BASE}/kas`),
+                axios.get(`${API_BASE}/kategori-kas`),
+                axios.get(`${API_BASE}/tagihan-warga`),
+                axios.get(`${API_BASE}/rekening-kas`),
                 axios.get(`${API_BASE}/ronda`),
                 axios.get(`${API_BASE}/bank-sampah`),
                 axios.get(`${API_BASE}/umkm`),
@@ -153,32 +194,394 @@ window.appState = () => ({
                 axios.get(`${API_BASE}/log-aktivitas`)
             ]);
 
-            if (statsRes.status === 'fulfilled') this.stats = statsRes.value.data.stats;
-            if (wargaRes.status === 'fulfilled') this.wargas = wargaRes.value.data.data || wargaRes.value.data;
-            if (suratRes.status === 'fulfilled') this.surats = suratRes.value.data;
-            if (kasRes.status === 'fulfilled') this.kas = kasRes.value.data;
+            if (statsRes.status === 'fulfilled') this.stats = statsRes.value.data.stats || {};
+            if (wargaRes.status === 'fulfilled') this.wargas = wargaRes.value.data.data || wargaRes.value.data || [];
+            if (suratRes.status === 'fulfilled') this.surats = suratRes.value.data || [];
+            if (kasRes.status === 'fulfilled') this.kas = kasRes.value.data || { kas: [], total_pemasukan: 0, total_pengeluaran: 0, saldo: 0 };
+            if (kategoriRes.status === 'fulfilled') this.kategoriKas = kategoriRes.value.data || [];
+            if (tagihanRes.status === 'fulfilled') this.tagihanWarga = tagihanRes.value.data || { tagihans: [], stats: {}, wargas: [], rekenings: [] };
+            if (rekeningRes.status === 'fulfilled') this.rekeningKas = rekeningRes.value.data || [];
             if (rondaRes.status === 'fulfilled') {
                 this.rondas = rondaRes.value.data.rondas || [];
                 this.panicAlerts = rondaRes.value.data.panic_alerts || [];
             }
-            if (sampahRes.status === 'fulfilled') this.bankSampah = sampahRes.value.data;
-            if (umkmRes.status === 'fulfilled') this.umkms = umkmRes.value.data;
-            if (posyanduRes.status === 'fulfilled') this.posyandus = posyanduRes.value.data;
-            if (kegiatanRes.status === 'fulfilled') this.kegiatans = kegiatanRes.value.data;
-            if (rukemRes.status === 'fulfilled') this.rukems = rukemRes.value.data;
-            if (aspirasiRes.status === 'fulfilled') this.aspirasis = aspirasiRes.value.data;
+            if (sampahRes.status === 'fulfilled') this.bankSampah = sampahRes.value.data || { transaksis: [] };
+            if (umkmRes.status === 'fulfilled') this.umkms = umkmRes.value.data || [];
+            if (posyanduRes.status === 'fulfilled') this.posyandus = posyanduRes.value.data || [];
+            if (kegiatanRes.status === 'fulfilled') this.kegiatans = kegiatanRes.value.data || [];
+            if (rukemRes.status === 'fulfilled') this.rukems = rukemRes.value.data || [];
+            if (aspirasiRes.status === 'fulfilled') this.aspirasis = aspirasiRes.value.data || [];
             if (asetRes.status === 'fulfilled') {
                 this.asets = asetRes.value.data.asets || [];
                 this.peminjamans = asetRes.value.data.peminjamans || [];
             }
-            if (kopRes.status === 'fulfilled') this.koperasi = kopRes.value.data;
-            if (logRes.status === 'fulfilled') this.logs = logRes.value.data.data || logRes.value.data;
+            if (kopRes.status === 'fulfilled') this.koperasi = kopRes.value.data || {};
+            if (logRes.status === 'fulfilled') this.logs = logRes.value.data.data || logRes.value.data || [];
         } catch (e) {
             console.error('Error loading data:', e);
         }
     },
 
-    // Actions API
+    // ==========================================
+    // ACTIONS: KAS (PEMASUKAN, PENGELUARAN, SEMUA)
+    // ==========================================
+    openModalKas(jenis = 'pemasukan', item = null) {
+        if (item) {
+            this.modalKas = {
+                show: true,
+                mode: 'edit',
+                data: { ...item },
+                defaultJenis: item.jenis,
+            };
+        } else {
+            this.modalKas = {
+                show: true,
+                mode: 'create',
+                data: {
+                    tingkat: 'RW',
+                    rt: this.currentUser.rt || '01',
+                    kategori: jenis === 'pemasukan' ? (this.kas.kategori_pemasukan?.[0] || 'Iuran Warga Bulanan') : (this.kas.kategori_pengeluaran?.[0] || 'Operasional Pos Ronda & Keamanan'),
+                    jenis: jenis,
+                    jumlah: '',
+                    tanggal: new Date().toISOString().split('T')[0],
+                    pihak_terkait: jenis === 'pemasukan' ? 'Warga RT 01' : 'Penyedia Jasa / Toko',
+                    metode: 'Tunai',
+                    keterangan: '',
+                    bukti_transaksi: '',
+                },
+                defaultJenis: jenis,
+            };
+        }
+    },
+
+    async submitKas(event) {
+        const formData = new FormData(event.target);
+        const isEdit = this.modalKas.mode === 'edit' && this.modalKas.data?.id;
+        const payload = {
+            tingkat: formData.get('tingkat'),
+            rt: formData.get('rt') || '01',
+            kategori: formData.get('kategori'),
+            jenis: formData.get('jenis'),
+            jumlah: Number(formData.get('jumlah')),
+            tanggal: formData.get('tanggal'),
+            pihak_terkait: formData.get('pihak_terkait'),
+            metode: formData.get('metode') || 'Tunai',
+            keterangan: formData.get('keterangan'),
+            bukti_transaksi: formData.get('bukti_transaksi') || '',
+            user_id: this.currentUser.id,
+        };
+
+        try {
+            if (isEdit) {
+                await axios.put(`${API_BASE}/kas/${this.modalKas.data.id}`, payload);
+                this.showToast('Transaksi kas berhasil diperbarui!');
+            } else {
+                await axios.post(`${API_BASE}/kas`, payload);
+                this.showToast('Transaksi kas berhasil dicatat!');
+            }
+            this.modalKas.show = false;
+            await this.loadAllData();
+        } catch (err) {
+            this.showToast('Gagal menyimpan transaksi kas', 'error');
+        }
+    },
+
+    async deleteKas(id) {
+        if (!confirm('Apakah Anda yakin ingin menghapus catatan kas ini?')) return;
+        try {
+            await axios.delete(`${API_BASE}/kas/${id}`);
+            this.showToast('Catatan kas berhasil dihapus!');
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal menghapus transaksi kas', 'error');
+        }
+    },
+
+    // ==========================================
+    // ACTIONS: KATEGORI KAS
+    // ==========================================
+    openModalKategori(item = null) {
+        if (item) {
+            this.modalKategori = {
+                show: true,
+                mode: 'edit',
+                data: { ...item },
+            };
+        } else {
+            this.modalKategori = {
+                show: true,
+                mode: 'create',
+                data: {
+                    nama: '',
+                    jenis: 'pemasukan',
+                    tingkat: 'RW',
+                    deskripsi: '',
+                    is_aktif: true,
+                },
+            };
+        }
+    },
+
+    async submitKategori(event) {
+        const formData = new FormData(event.target);
+        const isEdit = this.modalKategori.mode === 'edit' && this.modalKategori.data?.id;
+        const payload = {
+            nama: formData.get('nama'),
+            jenis: formData.get('jenis'),
+            tingkat: formData.get('tingkat'),
+            deskripsi: formData.get('deskripsi'),
+            is_aktif: formData.get('is_aktif') === '1' || formData.get('is_aktif') === 'on' ? 1 : 0,
+        };
+
+        try {
+            if (isEdit) {
+                await axios.put(`${API_BASE}/kategori-kas/${this.modalKategori.data.id}`, payload);
+                this.showToast('Kategori kas berhasil diperbarui!');
+            } else {
+                await axios.post(`${API_BASE}/kategori-kas`, payload);
+                this.showToast('Kategori kas berhasil ditambahkan!');
+            }
+            this.modalKategori.show = false;
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal menyimpan kategori kas', 'error');
+        }
+    },
+
+    async deleteKategori(id) {
+        if (!confirm('Hapus kategori ini? Data kas yang sudah menggunakan kategori ini tidak akan terhapus.')) return;
+        try {
+            await axios.delete(`${API_BASE}/kategori-kas/${id}`);
+            this.showToast('Kategori kas berhasil dihapus!');
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal menghapus kategori', 'error');
+        }
+    },
+
+    // ==========================================
+    // ACTIONS: TAGIHAN WARGA
+    // ==========================================
+    openModalTagihan(item = null) {
+        if (item) {
+            this.modalTagihan = {
+                show: true,
+                mode: 'edit',
+                data: { ...item },
+            };
+        } else {
+            this.modalTagihan = {
+                show: true,
+                mode: 'create',
+                data: {
+                    judul: 'Iuran Warga & Kebersihan',
+                    tingkat: 'RT',
+                    rt: this.currentUser.rt || '01',
+                    nama_warga: '',
+                    nomor_rumah: '',
+                    periode: 'November 2026',
+                    nominal: 50000,
+                    kategori: 'Iuran Kebersihan Lingkungan',
+                    tanggal_jatuh_tempo: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+                    catatan: '',
+                },
+            };
+        }
+    },
+
+    async submitTagihan(event) {
+        const formData = new FormData(event.target);
+        const isEdit = this.modalTagihan.mode === 'edit' && this.modalTagihan.data?.id;
+        const payload = {
+            judul: formData.get('judul'),
+            tingkat: formData.get('tingkat'),
+            rt: formData.get('rt') || '01',
+            nama_warga: formData.get('nama_warga'),
+            nomor_rumah: formData.get('nomor_rumah'),
+            periode: formData.get('periode'),
+            nominal: Number(formData.get('nominal')),
+            kategori: formData.get('kategori'),
+            tanggal_jatuh_tempo: formData.get('tanggal_jatuh_tempo'),
+            catatan: formData.get('catatan'),
+        };
+
+        if (isEdit) {
+            payload.status = formData.get('status');
+        }
+
+        try {
+            if (isEdit) {
+                await axios.put(`${API_BASE}/tagihan-warga/${this.modalTagihan.data.id}`, payload);
+                this.showToast('Tagihan berhasil diperbarui!');
+            } else {
+                await axios.post(`${API_BASE}/tagihan-warga`, payload);
+                this.showToast('Tagihan warga berhasil diterbitkan!');
+            }
+            this.modalTagihan.show = false;
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal menyimpan tagihan', 'error');
+        }
+    },
+
+    async submitGenerateTagihan(event) {
+        const formData = new FormData(event.target);
+        const payload = {
+            judul: formData.get('judul'),
+            tingkat: formData.get('tingkat'),
+            rt: formData.get('rt'),
+            periode: formData.get('periode'),
+            nominal: Number(formData.get('nominal')),
+            kategori: formData.get('kategori'),
+            tanggal_jatuh_tempo: formData.get('tanggal_jatuh_tempo'),
+        };
+
+        try {
+            const res = await axios.post(`${API_BASE}/tagihan-warga/generate`, payload);
+            this.showToast(res.data.message || 'Tagihan massal berhasil di-generate!');
+            this.modalGenerateTagihan = false;
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast(e.response?.data?.message || 'Gagal generate tagihan massal', 'error');
+        }
+    },
+
+    openModalBayar(tagihan) {
+        this.modalBayarTagihan = {
+            ...tagihan,
+            metode_pembayaran: 'QRIS Kas RW 05',
+            rekening_id: this.rekeningKas[0]?.id || '',
+            tanggal_bayar: new Date().toISOString().split('T')[0],
+            bukti_bayar: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=60',
+            catatan: 'Pembayaran tagihan via transfer.',
+        };
+    },
+
+    async submitBayarTagihan(event) {
+        const formData = new FormData(event.target);
+        const id = this.modalBayarTagihan.id;
+        const payload = {
+            metode_pembayaran: formData.get('metode_pembayaran'),
+            rekening_id: formData.get('rekening_id') || null,
+            tanggal_bayar: formData.get('tanggal_bayar'),
+            bukti_bayar: formData.get('bukti_bayar'),
+            catatan: formData.get('catatan'),
+        };
+
+        try {
+            await axios.post(`${API_BASE}/tagihan-warga/${id}/bayar`, payload);
+            this.showToast('Konfirmasi pembayaran terkirim! Menunggu verifikasi bendahara.');
+            this.modalBayarTagihan = null;
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal mengirim konfirmasi bayar', 'error');
+        }
+    },
+
+    openModalVerifikasi(tagihan) {
+        this.modalVerifikasiTagihan = { ...tagihan, catatan_verif: 'Bukti transfer valid dan sesuai nominal.' };
+    },
+
+    async submitVerifikasiTagihan(id, status, catatan = '') {
+        try {
+            const payload = {
+                status: status,
+                petugas: `${this.currentUser.name} (${this.currentUser.role_title})`,
+                catatan: catatan || (status === 'lunas' ? 'Diverifikasi Lunas oleh bendahara.' : 'Bukti pembayaran ditolak.'),
+            };
+            const res = await axios.post(`${API_BASE}/tagihan-warga/${id}/verifikasi`, payload);
+            this.showToast(res.data.message || 'Status tagihan berhasil diverifikasi!');
+            this.modalVerifikasiTagihan = null;
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal memproses verifikasi tagihan', 'error');
+        }
+    },
+
+    async deleteTagihan(id) {
+        if (!confirm('Hapus tagihan ini?')) return;
+        try {
+            await axios.delete(`${API_BASE}/tagihan-warga/${id}`);
+            this.showToast('Tagihan berhasil dihapus!');
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal menghapus tagihan', 'error');
+        }
+    },
+
+    // ==========================================
+    // ACTIONS: REKENING & QRIS KAS
+    // ==========================================
+    openModalRekening(item = null) {
+        if (item) {
+            this.modalRekening = {
+                show: true,
+                mode: 'edit',
+                data: { ...item },
+            };
+        } else {
+            this.modalRekening = {
+                show: true,
+                mode: 'create',
+                data: {
+                    tingkat: 'RW',
+                    rt: this.currentUser.rt || '01',
+                    tipe: 'bank',
+                    nama_bank: '',
+                    nomor_rekening: '',
+                    atas_nama: 'KAS RW 05 SUKAMAJU',
+                    qris_image: '',
+                    keterangan: '',
+                    is_aktif: true,
+                },
+            };
+        }
+    },
+
+    async submitRekening(event) {
+        const formData = new FormData(event.target);
+        const isEdit = this.modalRekening.mode === 'edit' && this.modalRekening.data?.id;
+        const payload = {
+            tingkat: formData.get('tingkat'),
+            rt: formData.get('rt') || '01',
+            tipe: formData.get('tipe'),
+            nama_bank: formData.get('nama_bank'),
+            nomor_rekening: formData.get('nomor_rekening'),
+            atas_nama: formData.get('atas_nama'),
+            qris_image: formData.get('qris_image'),
+            keterangan: formData.get('keterangan'),
+            is_aktif: formData.get('is_aktif') === '1' || formData.get('is_aktif') === 'on' ? 1 : 0,
+        };
+
+        try {
+            if (isEdit) {
+                await axios.put(`${API_BASE}/rekening-kas/${this.modalRekening.data.id}`, payload);
+                this.showToast('Rekening / QRIS berhasil diperbarui!');
+            } else {
+                await axios.post(`${API_BASE}/rekening-kas`, payload);
+                this.showToast('Rekening / QRIS berhasil ditambahkan!');
+            }
+            this.modalRekening.show = false;
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal menyimpan rekening', 'error');
+        }
+    },
+
+    async deleteRekening(id) {
+        if (!confirm('Hapus rekening / QRIS ini?')) return;
+        try {
+            await axios.delete(`${API_BASE}/rekening-kas/${id}`);
+            this.showToast('Rekening / QRIS berhasil dihapus!');
+            await this.loadAllData();
+        } catch (e) {
+            this.showToast('Gagal menghapus rekening', 'error');
+        }
+    },
+
+    // ==========================================
+    // OTHER APP ACTIONS
+    // ==========================================
     async submitSurat(event) {
         const formData = new FormData(event.target);
         const payload = {
@@ -250,27 +653,6 @@ window.appState = () => ({
             this.cekSuratResult = res.data.surat;
         } catch (err) {
             this.cekSuratError = 'Surat tidak ditemukan. Pastikan nomor surat sesuai yang tertera pada lembar dokumen.';
-        }
-    },
-
-    async submitKas(event) {
-        const formData = new FormData(event.target);
-        const payload = {
-            tingkat: formData.get('tingkat'),
-            kategori: formData.get('kategori'),
-            jenis: formData.get('jenis'),
-            jumlah: Number(formData.get('jumlah')),
-            tanggal: formData.get('tanggal'),
-            keterangan: formData.get('keterangan'),
-        };
-
-        try {
-            await axios.post(`${API_BASE}/kas`, payload);
-            this.showToast('Transaksi kas berhasil dicatat!');
-            this.modalKas = false;
-            await this.loadAllData();
-        } catch (err) {
-            this.showToast('Gagal mencatat kas', 'error');
         }
     },
 

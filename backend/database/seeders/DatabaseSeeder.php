@@ -664,5 +664,10 @@ class DatabaseSeeder extends Seeder
             'keterangan' => 'Simpanan Wajib bulan Oktober',
             'status' => 'lunas',
         ]);
+
+        $this->call([
+            ActivityLogSeeder::class,
+            FinanceAdvancedSeeder::class,
+        ]);
     }
 }
