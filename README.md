@@ -88,7 +88,13 @@ Kata sandi bawaan untuk semua akun demo: **`password`**. Di dalam aplikasi front
 1. **Dashboard Adaptif**: Metrik khusus per role + tombol darurat SOS siskamling.
 2. **Data Warga**: Manajemen kependudukan, KK, NIK, status domisili, filter RT.
 3. **Surat Menyurat**: Alur RT $\rightarrow$ RW + cetak lembar surat resmi berkop garuda.
-4. **Kas Keuangan**: Arus kas transparan tingkat RW & RT (pemasukan/pengeluaran).
+4. **Kas Keuangan & Modul Finansial Lengkap**:
+   - **Pemasukan**: Pencatatan uang masuk, iuran warga, sumbangan donatur, bukti transfer.
+   - **Pengeluaran**: Pencatatan belanja operasional, perbaikan sarana, konsumsi ronda, santunan duka.
+   - **Semua Transaksi (Buku Kas Umum)**: Rekapitulasi mutasi kas, filter rentang tanggal/tingkat, ekspor laporan.
+   - **Kategori Kas**: Master data kategori pos penerimaan dan pengeluaran tingkat RW dan RT.
+   - **Kelola Tagihan Warga**: Penerbitan tagihan iuran, generate massal otomatis ke seluruh KK, verifikasi pembayaran digital oleh bendahara, dan menu bayar bagi warga.
+   - **Kelola Rekening & QRIS**: Master nomor rekening bank resmi dan barcode QRIS dinamis untuk pembayaran iuran non-tunai warga.
 5. **Keamanan & Ronda**: Jadwal giliran jaga pos kamling + broadcast alert darurat SOS.
 6. **Bank Sampah**: Katalog harga limbah per kg, pencatatan setoran, penarikan saldo tunai.
 7. **Pasar UMKM**: Etalase produk warga + tombol pemesanan langsung via WhatsApp.
