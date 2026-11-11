@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SiRW Digital - Portal Manajemen Rukun Warga</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col" x-data="appState()">
+
+    <!-- Toast Notification -->
+    <div x-show="toastMessage" x-cloak x-transition class="fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold"
+         :class="toastType === 'error' ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'">
+        <i class="fa-solid" :class="toastType === 'error' ? 'fa-triangle-exclamation text-rose-600' : 'fa-circle-check text-emerald-600'"></i>
+        <span x-text="toastMessage"></span>
+    </div>
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+        <div class="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+            <!-- Left: Toggle & Logo -->
+            <div class="flex items-center gap-3">
+                <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <div @click="currentView = 'welcome'" class="flex items-center gap-2.5 cursor-pointer">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 font-bold text-xl">
+                        <i class="fa-solid fa-users-line"></i>
+                    </div>
+                    <div class="hidden sm:block">
+                        <span class="text-base font-extrabold text-slate-900 tracking-tight block leading-tight">SiRW<span class="text-emerald-600">Digital</span></span>
+                        <span class="text-[11px] font-semibold text-slate-500 tracking-wider uppercase block">RW 05 Sukamaju (SPA Client)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Status & Role Switcher -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Backend API Status Indicator -->
+                <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                     :class="backendStatus === 'connected' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
+                    <span class="w-2 h-2 rounded-full" :class="backendStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
+                    <span x-text="backendStatus === 'connected' ? 'API Backend Aktif (:8000)' : 'Menghubungkan Backend...'"></span>
+                </div>
+
+                <!-- 8-Role Quick Switcher Dropdown -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 transition">
+                        <i class="fa-solid fa-user-gear text-emerald-600"></i>
+                        <span x-text="currentUser.role_title" class="truncate max-w-[120px] sm:max-w-none"></span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50">
+                        <div class="px-3 py-1.5 border-b border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ganti Peran Pengguna (8 Roles)</p>
+                        </div>
+                        <div class="max-h-64 overflow-y-auto">
+                            <template x-for="r in rolesList" :key="r.key">
+                                <button type="button" @click="switchRole(r.key); open = false" class="w-full text-left flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition"
+                                        :class="currentUser.role === r.key ? 'bg-emerald-50 font-bold text-emerald-800' : 'text-slate-700'">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid" :class="[r.icon, r.color, 'w-4 text-center']"></i>
+                                        <div>
+                                            <span x-text="r.title" class="block font-bold"></span>
+                                            <span x-text="r.name" class="text-[10px] text-slate-400 block"></span>
+                                        </div>
+                                    </div>
+                                    <i x-show="currentUser.role === r.key" class="fa-solid fa-check text-emerald-600 text-xs"></i>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panic SOS Button -->
+                <button type="button" @click="modalPanic = true" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition animate-pulse">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span class="hidden sm:inline">SOS</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Desktop Sidebar -->
+        <aside class="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-slate-200 overflow-y-auto">
+            <div class="p-4 flex-1 flex flex-col space-y-6">
+                <!-- Group 1: Utama -->
+                <div class="space-y-1">
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Utama</p>
+                    <button type="button" @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-gauge-high w-4 text-center"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button type="button" @click="currentView = 'welcome'" :class="currentView === 'welcome' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-globe w-4 text-center"></i>
+                        <span>Portal Warga (Publik)</span>
+                    </button>
+                </div>
+
+                <!-- Group 2: Kependudukan -->
+                <div class="space-y-1">
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Kependudukan</p>
+                    <button type="button" @click="currentView = 'warga'" :class="currentView === 'warga' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-users w-4 text-center"></i>
+                            <span>Data Warga</span>
+                        </div>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full" x-text="wargas.length"></span>
+                    </button>
+                    <button type="button" @click="currentView = 'surat'" :class="currentView === 'surat' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-envelope-open-text w-4 text-center"></i>
+                            <span>Surat Menyurat</span>
+                        </div>
+                        <span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full" x-text="surats.filter(s => s.status !== 'selesai').length"></span>
+                    </button>
+                    <button type="button" @click="currentView = 'aspirasi'" :class="currentView === 'aspirasi' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-comments w-4 text-center"></i>
+                        <span>Aspirasi & Aduan</span>
+                    </button>
+                    <button type="button" @click="currentView = 'rukem'" :class="currentView === 'rukem' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-hand-holding-heart w-4 text-center"></i>
+                        <span>RUKEM (Kematian)</span>
+                    </button>
+                </div>
+
+                <!-- Group 3: Keuangan & Ekonomi -->
+                <div class="space-y-1">
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Keuangan & Usaha</p>
+                    <button type="button" @click="currentView = 'kas'" :class="currentView === 'kas' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-coins w-4 text-center"></i>
+                        <span>Kas RW & RT</span>
+                    </button>
+                    <button type="button" @click="currentView = 'bank_sampah'" :class="currentView === 'bank_sampah' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-recycle w-4 text-center"></i>
+                        <span>Bank Sampah</span>
+                    </button>
+                    <button type="button" @click="currentView = 'umkm'" :class="currentView === 'umkm' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-store w-4 text-center"></i>
+                        <span>Pasar UMKM</span>
+                    </button>
+                    <button type="button" @click="currentView = 'koperasi'" :class="currentView === 'koperasi' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-scale-balanced w-4 text-center"></i>
+                        <span>Koperasi Warga</span>
+                    </button>
+                </div>
+
+                <!-- Group 4: Lingkungan & Keamanan -->
+                <div class="space-y-1">
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Lingkungan</p>
+                    <button type="button" @click="currentView = 'ronda'" :class="currentView === 'ronda' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-shield-halved w-4 text-center"></i>
+                        <span>Keamanan & Ronda</span>
+                    </button>
+                    <button type="button" @click="currentView = 'posyandu'" :class="currentView === 'posyandu' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-heart-pulse w-4 text-center"></i>
+                        <span>Posyandu Pintar</span>
+                    </button>
+                    <button type="button" @click="currentView = 'kegiatan'" :class="currentView === 'kegiatan' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-calendar-days w-4 text-center"></i>
+                        <span>Kegiatan & Agenda</span>
+                    </button>
+                    <button type="button" @click="currentView = 'aset'" :class="currentView === 'aset' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-boxes-stacked w-4 text-center"></i>
+                        <span>Aset & Fasilitas</span>
+                    </button>
+                </div>
+
+                <!-- Group 5: Sistem & Audit -->
+                <div class="space-y-1">
+                    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Sistem</p>
+                    <button type="button" @click="currentView = 'log_aktivitas'" :class="currentView === 'log_aktivitas' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-clock-rotate-left w-4 text-center"></i>
+                            <span>Log Aktivitas</span>
+                        </div>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-full font-bold">Audit</span>
+                    </button>
+                    <button type="button" @click="currentView = 'pengaturan'" :class="currentView === 'pengaturan' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-sliders w-4 text-center"></i>
+                        <span>Pengaturan & RBAC</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24">
+            
+            <!-- VIEW: DASHBOARD -->
+            <div x-show="currentView === 'dashboard'" class="space-y-6">
+                <!-- Welcome Banner -->
+                <div class="p-6 rounded-3xl bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="space-y-1 text-center md:text-left">
+                        <span class="text-[11px] font-bold uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full">Selamat Datang</span>
+                        <h2 class="text-xl sm:text-2xl font-extrabold" x-text="currentUser.name"></h2>
+                        <p class="text-xs text-emerald-100" x-text="'Peran Aktif: ' + currentUser.role_title + ' • RW 05 Kelurahan Sukamaju'"></p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="modalSurat = true" class="px-4 py-2 rounded-xl bg-white text-emerald-800 font-bold text-xs hover:bg-emerald-50 transition shadow-sm">
+                            <i class="fa-solid fa-file-circle-plus mr-1"></i> Ajukan Surat
+                        </button>
+                        <button type="button" @click="modalPanic = true" class="px-4 py-2 rounded-xl bg-rose-500 text-white font-bold text-xs hover:bg-rose-600 transition shadow-sm">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Sinyal Darurat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Warga</span>
+                        <span class="text-2xl font-extrabold text-slate-900 mt-1 block" x-text="stats.total_warga || wargas.length"></span>
+                        <span class="text-[10px] text-emerald-600 font-semibold">Tercatat di 6 Wilayah RT</span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">Surat Diajukan</span>
+                        <span class="text-2xl font-extrabold text-amber-600 mt-1 block" x-text="surats.filter(s => s.status !== 'selesai').length"></span>
+                        <span class="text-[10px] text-amber-600 font-semibold">Menunggu Verifikasi RT/RW</span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[11px] font-bold text-teal-600 uppercase tracking-wider block">Saldo Kas RW/RT</span>
+                        <span class="text-xl sm:text-2xl font-extrabold text-teal-600 mt-1 block" x-text="formatRupiah(kas.saldo || stats.saldo_kas)"></span>
+                        <span class="text-[10px] text-teal-600 font-semibold">Transparan & Realtime</span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block">Lapak UMKM Aktif</span>
+                        <span class="text-2xl font-extrabold text-indigo-600 mt-1 block" x-text="umkms.length || stats.total_umkm"></span>
+                        <span class="text-[10px] text-indigo-600 font-semibold">Langsung Pesan via WA</span>
+                    </div>
+                </div>
+
+                <!-- Recent Activities & Urgent Alerts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Permohonan Surat Terkini -->
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-file-signature text-emerald-600"></i>
+                                <span>Permohonan Surat Terkini</span>
+                            </h3>
+                            <button type="button" @click="currentView = 'surat'" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">Lihat Semua</button>
+                        </div>
+                        <div class="divide-y divide-slate-100">
+                            <template x-for="s in surats.slice(0, 4)" :key="s.id">
+                                <div class="py-3 flex items-center justify-between text-xs">
+                                    <div>
+                                        <span class="font-bold text-slate-800 block" x-text="s.jenis_surat"></span>
+                                        <span class="text-[11px] text-slate-400" x-text="(s.user?.name || 'Warga') + ' • ' + (s.keperluan || '')"></span>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                                          :class="s.status === 'selesai' ? 'bg-emerald-100 text-emerald-800' : (s.status === 'disetujui_rt' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800')"
+                                          x-text="s.status"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Log Aktivitas Terkini -->
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i>
+                                <span>Jejak Audit Aktivitas Terkini</span>
+                            </h3>
+                            <button type="button" @click="currentView = 'log_aktivitas'" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">Lihat Audit</button>
+                        </div>
+                        <div class="divide-y divide-slate-100">
+                            <template x-for="l in logs.slice(0, 4)" :key="l.id">
+                                <div class="py-3 flex items-start gap-3 text-xs">
+                                    <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <i class="fa-solid fa-circle-check text-emerald-600 text-xs"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-slate-800" x-text="l.user_name"></span>
+                                            <span class="text-[10px] text-slate-400" x-text="formatDate(l.created_at)"></span>
+                                        </div>
+                                        <p class="text-slate-600 text-[11px] mt-0.5" x-text="l.deskripsi"></p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DATA WARGA -->
+            <div x-show="currentView === 'warga'" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">Data Kependudukan Warga</h2>
+                        <p class="text-xs text-slate-500">Pencatatan data keluarga, domisili, dan wilayah RT</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold">
+                            <tr>
+                                <th class="py-3.5 px-4">Nama Lengkap</th>
+                                <th class="py-3.5 px-4">NIK / No. KK</th>
+                                <th class="py-3.5 px-4">L/P</th>
+                                <th class="py-3.5 px-4">Wilayah RT</th>
+                                <th class="py-3.5 px-4">Status Tinggal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="w in wargas" :key="w.id">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4 font-bold text-slate-900" x-text="w.nama_lengkap"></td>
+                                    <td class="py-3 px-4 font-mono text-slate-600" x-text="w.nik"></td>
+                                    <td class="py-3 px-4" x-text="w.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'"></td>
+                                    <td class="py-3 px-4 font-bold text-emerald-700" x-text="'RT ' + w.rt + ' / RW ' + w.rw"></td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700" x-text="w.status_tinggal || 'Tetap'"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: SURAT MENYURAT -->
+            <div x-show="currentView === 'surat'" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">Layanan Surat Menyurat Digital</h2>
+                        <p class="text-xs text-slate-500">Alur verifikasi berjenjang RT ke RW dengan cetak resmi kop garuda</p>
+                    </div>
+                    <button type="button" @click="modalSurat = true" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
+                        + Ajukan Surat Baru
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold">
+                            <tr>
+                                <th class="py-3.5 px-4">Nomor Surat</th>
+                                <th class="py-3.5 px-4">Pemohon</th>
+                                <th class="py-3.5 px-4">Jenis Surat</th>
+                                <th class="py-3.5 px-4">Keperluan</th>
+                                <th class="py-3.5 px-4">Status</th>
+                                <th class="py-3.5 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="s in surats" :key="s.id">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4 font-mono font-bold text-emerald-700" x-text="s.nomor_surat || 'Menunggu RW'"></td>
+                                    <td class="py-3 px-4 font-bold text-slate-900" x-text="s.user?.name || 'Warga'"></td>
+                                    <td class="py-3 px-4" x-text="s.jenis_surat"></td>
+                                    <td class="py-3 px-4 text-slate-500" x-text="s.keperluan"></td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase"
+                                              :class="s.status === 'selesai' ? 'bg-emerald-100 text-emerald-800' : (s.status === 'disetujui_rt' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800')"
+                                              x-text="s.status"></span>
+                                    </td>
+                                    <td class="py-3 px-4 text-right space-x-1">
+                                        <!-- Verifikasi RT -->
+                                        <button x-show="s.status === 'diajukan' && (currentUser.role === 'rt' || currentUser.role === 'superadmin')"
+                                                @click="approveRt(s.id)" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold hover:bg-blue-100">
+                                            Setujui RT
+                                        </button>
+                                        <!-- Persetujuan RW -->
+                                        <button x-show="s.status === 'disetujui_rt' && (currentUser.role === 'rw' || currentUser.role === 'superadmin')"
+                                                @click="approveRw(s.id)" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100">
+                                            Terbitkan RW
+                                        </button>
+                                        <!-- Cetak Surat -->
+                                        <button x-show="s.status === 'selesai'" @click="modalCetakSurat = s" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200">
+                                            <i class="fa-solid fa-print mr-1"></i> Cetak
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: KAS RW & RT -->
+            <div x-show="currentView === 'kas'" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">Kas Keuangan Lingkungan</h2>
+                        <p class="text-xs text-slate-500">Transparansi arus kas masuk, pengeluaran, dan saldo kas bersama</p>
+                    </div>
+                    <button type="button" @click="modalKas = true" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
+                        + Catat Kas Baru
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Pemasukan</span>
+                        <span class="text-xl font-extrabold text-emerald-600 mt-1 block" x-text="formatRupiah(kas.total_pemasukan)"></span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Pengeluaran</span>
+                        <span class="text-xl font-extrabold text-rose-600 mt-1 block" x-text="formatRupiah(kas.total_pengeluaran)"></span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Saldo Akhir Bersama</span>
+                        <span class="text-xl font-extrabold text-teal-600 mt-1 block" x-text="formatRupiah(kas.saldo)"></span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold">
+                            <tr>
+                                <th class="py-3.5 px-4">Tanggal</th>
+                                <th class="py-3.5 px-4">Tingkat</th>
+                                <th class="py-3.5 px-4">Kategori</th>
+                                <th class="py-3.5 px-4">Keterangan</th>
+                                <th class="py-3.5 px-4 text-right">Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="k in (kas.kas || [])" :key="k.id">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4 font-mono text-slate-400" x-text="formatDate(k.tanggal)"></td>
+                                    <td class="py-3 px-4 font-bold" x-text="k.tingkat"></td>
+                                    <td class="py-3 px-4 text-slate-700" x-text="k.kategori"></td>
+                                    <td class="py-3 px-4 text-slate-500" x-text="k.keterangan"></td>
+                                    <td class="py-3 px-4 text-right font-extrabold"
+                                        :class="k.jenis === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'"
+                                        x-text="(k.jenis === 'pemasukan' ? '+ ' : '- ') + formatRupiah(k.jumlah)"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: LOG AKTIVITAS & AUDIT -->
+            <div x-show="currentView === 'log_aktivitas'" class="space-y-6">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900">Log Aktivitas & Jejak Audit Sistem</h2>
+                    <p class="text-xs text-slate-500">Transparansi seluruh kejadian, permohonan surat, presensi ronda, dan mutasi keuangan</p>
+                </div>
+
+                <div class="space-y-3">
+                    <template x-for="l in logs" :key="l.id">
+                        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-slate-900" x-text="l.user_name"></span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 uppercase" x-text="l.modul"></span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800" x-text="l.tindakan"></span>
+                                    </div>
+                                    <p class="text-slate-600 text-[11px] mt-1" x-text="l.deskripsi"></p>
+                                </div>
+                            </div>
+                            <span class="text-[11px] text-slate-400 font-mono" x-text="formatDate(l.created_at)"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- VIEW: PORTAL WARGA / CEK SURAT PUBLIK -->
+            <div x-show="currentView === 'welcome'" class="space-y-6">
+                <div class="p-8 rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 text-white shadow-xl space-y-4">
+                    <span class="px-3 py-1 rounded-full bg-white/10 text-xs font-bold uppercase tracking-wider">Portal Informasi Publik</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Rukun Warga RW 05 Kelurahan Sukamaju</h2>
+                    <p class="text-xs sm:text-sm text-emerald-100 max-w-2xl leading-relaxed">
+                        Layanan terpadu lingkungan warga berbasis digital. Cek status keaslian surat pengantar RT/RW secara mandiri tanpa harus login ke akun.
+                    </p>
+
+                    <!-- Formulir Cek Surat Mandiri -->
+                    <div class="max-w-xl pt-2">
+                        <div class="flex gap-2">
+                            <input type="text" x-model="cekSuratNomor" placeholder="Masukkan Nomor Surat (Contoh: 470/001/SRW/2026 atau SRT/01/2026/001)..." class="flex-1 px-4 py-3 rounded-2xl bg-white text-slate-800 text-xs font-bold outline-none">
+                            <button type="button" @click="checkSuratMandiri()" class="px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition">
+                                Cek Keaslian
+                            </button>
+                        </div>
+                        <p x-show="cekSuratError" x-text="cekSuratError" class="text-xs text-rose-300 font-bold mt-2"></p>
+                        
+                        <!-- Hasil Cek Surat -->
+                        <div x-show="cekSuratResult" class="mt-4 p-4 rounded-2xl bg-white/10 border border-white/20 text-xs space-y-2">
+                            <div class="flex items-center justify-between font-bold">
+                                <span class="text-amber-300" x-text="cekSuratResult?.nomor_surat || 'Surat Belum Bertanda Tangan RW'"></span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold"
+                                      :class="cekSuratResult?.status === 'selesai' ? 'bg-emerald-400 text-slate-950' : 'bg-amber-300 text-slate-950'"
+                                      x-text="cekSuratResult?.status"></span>
+                            </div>
+                            <p class="text-white" x-text="'Pemohon: ' + (cekSuratResult?.user?.name || '-') + ' • ' + (cekSuratResult?.jenis_surat || '')"></p>
+                            <p class="text-emerald-200 text-[11px]" x-text="'Keperluan: ' + (cekSuratResult?.keperluan || '-')"></p>
+                            <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-emerald-100">
+                                <span x-text="'Diverifikasi RT: ' + (cekSuratResult?.disetujui_rt_oleh || '-')"></span>
+                                <span x-text="'Disetujui RW: ' + (cekSuratResult?.disetujui_rw_oleh || '-')"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Showcase UMKM & Kegiatan -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+                        <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-store text-violet-600"></i>
+                            <span>Etalase UMKM Warga</span>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <template x-for="u in umkms.slice(0, 4)" :key="u.id">
+                                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                                    <span class="text-[10px] font-bold text-violet-600" x-text="u.kategori"></span>
+                                    <h4 class="font-bold text-xs text-slate-900" x-text="u.nama_usaha"></h4>
+                                    <p class="text-[11px] text-slate-500" x-text="u.nama_pemilik"></p>
+                                    <a :href="'https://wa.me/' + u.no_wa" target="_blank" class="inline-block mt-1 text-[11px] font-bold text-emerald-600 hover:underline">
+                                        <i class="fa-brands fa-whatsapp"></i> Chat Penjual
+                                    </a>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+                        <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-check text-sky-600"></i>
+                            <span>Agenda Kegiatan Warga</span>
+                        </h3>
+                        <div class="space-y-2">
+                            <template x-for="k in kegiatans.slice(0, 3)" :key="k.id">
+                                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                                    <div>
+                                        <h4 class="font-bold text-slate-900" x-text="k.nama_kegiatan"></h4>
+                                        <p class="text-[11px] text-slate-500" x-text="k.lokasi"></p>
+                                    </div>
+                                    <span class="text-[11px] font-mono text-sky-700 font-bold" x-text="formatDate(k.tanggal_mulai)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: ASPIRASI / PENGADUAN -->
+            <div x-show="currentView === 'aspirasi'" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">Aspirasi & Pengaduan Warga</h2>
+                        <p class="text-xs text-slate-500">Kanal penyampaian saran, usulan fasilitas, dan aduan lingkungan</p>
+                    </div>
+                    <button type="button" @click="modalAspirasi = true" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
+                        + Tulis Aspirasi
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <template x-for="a in aspirasis" :key="a.id">
+                        <div class="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700" x-text="a.kategori"></span>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                                          :class="a.status === 'selesai' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                                          x-text="a.status"></span>
+                                    <span class="text-xs font-bold text-slate-700" x-text="a.is_anonim ? 'Anonim' : ('Oleh: ' + (a.user?.name || 'Warga'))"></span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 font-mono" x-text="formatDate(a.created_at)"></span>
+                            </div>
+                            <h3 class="font-extrabold text-sm text-slate-900" x-text="a.judul"></h3>
+                            <p class="text-xs text-slate-600 leading-relaxed" x-text="a.isi"></p>
+                            
+                            <!-- Respon Pengurus -->
+                            <div x-show="a.tanggapan" class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-900">
+                                <span class="font-bold block" x-text="'Tanggapan Pengurus (' + (a.ditanggapi_oleh || 'RT/RW') + '):'"></span>
+                                <p class="mt-1 text-slate-800 italic" x-text="a.tanggapan"></p>
+                            </div>
+
+                            <button x-show="!a.tanggapan && currentUser.role !== 'warga'" @click="modalTanggapiAspirasi = a" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">
+                                <i class="fa-solid fa-reply mr-1"></i> Beri Tanggapan Resmi
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- VIEW: KOPERASI WARGA -->
+            <div x-show="currentView === 'koperasi'" class="space-y-6">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900">Koperasi Warga Mandiri RW 05</h2>
+                    <p class="text-xs text-slate-500">Layanan simpan pinjam gotong royong dan permodalan UMKM</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Total Simpanan</span>
+                        <span class="text-xl font-extrabold text-emerald-600 mt-1 block" x-text="formatRupiah(koperasi.total_simpanan)"></span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Pinjaman Bergulir</span>
+                        <span class="text-xl font-extrabold text-amber-600 mt-1 block" x-text="formatRupiah(koperasi.total_pinjaman)"></span>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-slate-400 block uppercase">Anggota Terdaftar</span>
+                        <span class="text-xl font-extrabold text-indigo-600 mt-1 block" x-text="(koperasi.total_anggota || 0) + ' Warga'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: ASET & FASILITAS -->
+            <div x-show="currentView === 'aset'" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">Inventaris & Fasilitas Bersama</h2>
+                        <p class="text-xs text-slate-500">Peminjaman tenda, kursi, proyektor, sound system bersama</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <template x-for="ast in asets" :key="ast.id">
+                        <div class="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono text-[10px] font-bold text-slate-400" x-text="ast.kode_aset"></span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800" x-text="ast.kondisi"></span>
+                            </div>
+                            <h3 class="font-extrabold text-sm text-slate-900" x-text="ast.nama_aset"></h3>
+                            <div class="text-xs text-slate-500 space-y-1">
+                                <p x-text="'Tersedia: ' + ast.jumlah_tersedia + ' / ' + ast.jumlah_total + ' unit'"></p>
+                                <p class="text-[11px]" x-text="'Lokasi: ' + ast.lokasi_penyimpanan"></p>
+                            </div>
+                            <button type="button" @click="modalPinjamAset = ast" class="w-full py-2 rounded-xl bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white font-bold text-xs transition">
+                                Ajukan Pinjam
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-2 py-1.5 flex justify-around items-center shadow-lg">
+        <button type="button" @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-emerald-600 font-bold' : 'text-slate-500'" class="flex flex-col items-center py-1 px-3 text-[11px]">
+            <i class="fa-solid fa-gauge-high text-lg"></i>
+            <span class="mt-0.5">Beranda</span>
+        </button>
+        <button type="button" @click="currentView = 'surat'" :class="currentView === 'surat' ? 'text-emerald-600 font-bold' : 'text-slate-500'" class="flex flex-col items-center py-1 px-3 text-[11px]">
+            <i class="fa-solid fa-envelope-open-text text-lg"></i>
+            <span class="mt-0.5">Surat</span>
+        </button>
+        <button type="button" @click="currentView = 'kas'" :class="currentView === 'kas' ? 'text-emerald-600 font-bold' : 'text-slate-500'" class="flex flex-col items-center py-1 px-3 text-[11px]">
+            <i class="fa-solid fa-coins text-lg"></i>
+            <span class="mt-0.5">Kas</span>
+        </button>
+        <button type="button" @click="sidebarOpen = true" class="flex flex-col items-center py-1 px-3 text-[11px] text-slate-500">
+            <i class="fa-solid fa-table-cells-large text-lg"></i>
+            <span class="mt-0.5">Menu</span>
+        </button>
+    </nav>
+
+    <!-- Mobile Off-Canvas Drawer -->
+    <div x-show="sidebarOpen" x-cloak class="relative z-50 lg:hidden">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" @click="sidebarOpen = false"></div>
+        <div class="fixed inset-0 flex">
+            <div class="relative mr-16 flex w-full max-w-xs flex-1 bg-white shadow-2xl p-5 overflow-y-auto space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <span class="font-extrabold text-sm text-slate-900">Menu Navigasi SiRW</span>
+                    <button @click="sidebarOpen = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div class="space-y-2 text-xs font-semibold">
+                    <button type="button" @click="currentView = 'dashboard'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Dashboard</button>
+                    <button type="button" @click="currentView = 'warga'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Data Warga</button>
+                    <button type="button" @click="currentView = 'surat'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Surat Menyurat</button>
+                    <button type="button" @click="currentView = 'kas'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Kas RW & RT</button>
+                    <button type="button" @click="currentView = 'ronda'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Keamanan & Ronda</button>
+                    <button type="button" @click="currentView = 'bank_sampah'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Bank Sampah</button>
+                    <button type="button" @click="currentView = 'umkm'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Pasar UMKM</button>
+                    <button type="button" @click="currentView = 'koperasi'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Koperasi Warga</button>
+                    <button type="button" @click="currentView = 'aset'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Aset & Fasilitas</button>
+                    <button type="button" @click="currentView = 'aspirasi'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Aspirasi Warga</button>
+                    <button type="button" @click="currentView = 'log_aktivitas'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Log Aktivitas</button>
+                    <button type="button" @click="currentView = 'welcome'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block text-emerald-700 font-bold">Portal Warga (Publik)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: AJUKAN SURAT BARU -->
+    <div x-show="modalSurat" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl" @click.away="modalSurat = false">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-900">Form Pengajuan Surat Warga</h3>
+                <button type="button" @click="modalSurat = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form @submit.prevent="submitSurat($event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Jenis Surat</label>
+                    <select name="jenis_surat" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none">
+                        <option value="Surat Pengantar SKCK">Surat Pengantar SKCK</option>
+                        <option value="Surat Keterangan Domisili">Surat Keterangan Domisili</option>
+                        <option value="Surat Keterangan Usaha (SKU)">Surat Keterangan Usaha (SKU)</option>
+                        <option value="Surat Keterangan Tidak Mampu (SKTM)">Surat Keterangan Tidak Mampu (SKTM)</option>
+                        <option value="Surat Pengantar Kematian">Surat Pengantar Kematian</option>
+                        <option value="Surat Keterangan Belum Menikah">Surat Keterangan Belum Menikah</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Keperluan</label>
+                    <input type="text" name="keperluan" required placeholder="Contoh: Melamar pekerjaan di PT Jaya Mandiri" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Keterangan Tambahan</label>
+                    <textarea name="keterangan_tambahan" rows="3" placeholder="Informasi tambahan jika ada..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none resize-none"></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="modalSurat = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md">Kirim Permohonan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CETAK SURAT RESMI (KOP GARUDA & NOMOR SURAT) -->
+    <div x-show="modalCetakSurat" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-8 space-y-6 shadow-2xl" @click.away="modalCetakSurat = null">
+            <!-- Kop Surat Resmi -->
+            <div class="border-b-2 border-slate-900 pb-4 text-center space-y-0.5">
+                <h3 class="text-xs uppercase tracking-widest font-bold text-slate-500">RUKUN WARGA 05 KELURAHAN SUKAMAJU</h3>
+                <h2 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">KECAMATAN CILODONG, KOTA DEPOK</h2>
+                <p class="text-[11px] text-slate-500">Sekretariat: Balai Warga RW 05, Jl. Melati Raya No. 1 • Telp: 081298765432</p>
+            </div>
+
+            <!-- Body Surat -->
+            <div class="space-y-4 text-xs leading-relaxed">
+                <div class="text-center space-y-1">
+                    <span class="font-extrabold uppercase text-sm underline block" x-text="modalCetakSurat?.jenis_surat"></span>
+                    <span class="font-mono text-slate-500 block" x-text="'Nomor: ' + (modalCetakSurat?.nomor_surat || '-')"></span>
+                </div>
+
+                <p>Yang bertanda tangan di bawah ini Pengurus Rukun Tetangga (RT) dan Rukun Warga (RW) 05 Kelurahan Sukamaju, Kecamatan Cilodong, menerangkan bahwa:</p>
+
+                <div class="pl-4 space-y-1 font-semibold text-slate-700">
+                    <p x-text="'Nama Lengkap : ' + (modalCetakSurat?.user?.name || '-')"></p>
+                    <p x-text="'Alamat Domisili : RT ' + (modalCetakSurat?.user?.rt || '01') + ' / RW 05 Kelurahan Sukamaju'"></p>
+                    <p x-text="'Keperluan : ' + (modalCetakSurat?.keperluan || '-')"></p>
+                </div>
+
+                <p>Demikian surat keterangan ini kami buat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>
+            </div>
+
+            <!-- Tanda Tangan Bertingkat RT & RW -->
+            <div class="grid grid-cols-2 text-center text-xs pt-4 font-semibold text-slate-800">
+                <div class="space-y-12">
+                    <span>Mengetahui, Ketua RT 01</span>
+                    <span class="block font-bold underline" x-text="modalCetakSurat?.disetujui_rt_oleh || 'Ketua RT 01'"></span>
+                </div>
+                <div class="space-y-12">
+                    <span x-text="'Sukamaju, ' + formatDate(new Date())"></span>
+                    <span class="block font-bold underline" x-text="modalCetakSurat?.disetujui_rw_oleh || 'H. Bambang Sutrisno, S.E.'"></span>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button type="button" @click="modalCetakSurat = null" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600 text-xs">Tutup</button>
+                <button type="button" onclick="window.print()" class="px-5 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs shadow-md">
+                    <i class="fa-solid fa-print mr-1"></i> Cetak Dokumen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CATAT KAS BARU -->
+    <div x-show="modalKas" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalKas = false">
+            <h3 class="text-base font-extrabold text-slate-900">Catat Transaksi Kas</h3>
+            <form @submit.prevent="submitKas($event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tingkat</label>
+                    <select name="tingkat" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                        <option value="RW">Kas RW</option>
+                        <option value="RT">Kas RT</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Jenis Transaksi</label>
+                    <select name="jenis" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                        <option value="pemasukan">Pemasukan (Uang Masuk)</option>
+                        <option value="pengeluaran">Pengeluaran (Biaya Operasional)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Kategori</label>
+                    <input type="text" name="kategori" required placeholder="Contoh: Iuran Warga Bulanan" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nominal (Rp)</label>
+                    <input type="number" name="jumlah" min="1000" required placeholder="100000" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tanggal</label>
+                    <input type="date" name="tanggal" required value="2026-11-06" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Keterangan</label>
+                    <input type="text" name="keterangan" required placeholder="Keterangan transaksi..." class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="modalKas = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Simpan Kas</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PANIC BUTTON DARURAT SOS -->
+    <div x-show="modalPanic" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border-2 border-rose-500" @click.away="modalPanic = false">
+            <div class="flex items-center gap-3 text-rose-600">
+                <i class="fa-solid fa-triangle-exclamation text-2xl animate-bounce"></i>
+                <div>
+                    <h3 class="text-base font-black uppercase text-slate-900">Tombol Darurat SOS Siskamling</h3>
+                    <p class="text-[11px] text-slate-500">Peringatan langsung disiarkan ke pos ronda dan pengurus RW</p>
+                </div>
+            </div>
+            <form @submit.prevent="triggerPanicSOS($event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Jenis Darurat</label>
+                    <select name="jenis_darurat" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none font-bold">
+                        <option value="Pencurian / Maling">🚨 Pencurian / Maling</option>
+                        <option value="Kebakaran">🔥 Kebakaran</option>
+                        <option value="Medis / Sakit Kritis">🚑 Medis / Sakit Parah Kritis</option>
+                        <option value="Bencana Banjir / Pohon Tumbang">⛈️ Bencana Alam / Banjir</option>
+                        <option value="Keributan / Gangguan Keamanan">⚠️ Keributan / Gangguan Keamanan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Lokasi Kejadian</label>
+                    <input type="text" name="lokasi_kejadian" required placeholder="Contoh: Gang Kenanga RT 02 dekat pos kamling" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Kronologi Singkat</label>
+                    <textarea name="keterangan" rows="2" required placeholder="Jelaskan situasi darurat..." class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none resize-none"></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="modalPanic = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold shadow-md">
+                        Siarkan Sekarang!
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: TULIS ASPIRASI -->
+    <div x-show="modalAspirasi" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalAspirasi = false">
+            <h3 class="text-base font-extrabold text-slate-900">Sampaikan Aspirasi / Aduan</h3>
+            <form @submit.prevent="submitAspirasi($event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Kategori</label>
+                    <select name="kategori" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                        <option value="Infrastruktur & Jalan">Infrastruktur & Jalan</option>
+                        <option value="Keamanan & Ketertiban">Keamanan & Ketertiban</option>
+                        <option value="Kebersihan & Sampah">Kebersihan & Sampah</option>
+                        <option value="Sosial & Kemasyarakatan">Sosial & Kemasyarakatan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Judul Aspirasi</label>
+                    <input type="text" name="judul" required placeholder="Judul ringkas..." class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Isi Laporan / Usulan</label>
+                    <textarea name="isi" rows="3" required placeholder="Uraikan keluhan Anda..." class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none resize-none"></textarea>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="is_anonim" id="anon" class="rounded">
+                    <label for="anon" class="font-bold text-slate-700">Kirim sebagai Anonim</label>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="modalAspirasi = false" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Kirimkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: TANGGAPAN ASPIRASI RESMI -->
+    <div x-show="modalTanggapiAspirasi" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" @click.away="modalTanggapiAspirasi = null">
+            <h3 class="text-base font-extrabold text-slate-900">Beri Tanggapan Resmi Pengurus</h3>
+            <p class="text-xs text-slate-500" x-text="modalTanggapiAspirasi ? modalTanggapiAspirasi.judul : ''"></p>
+            <form @submit.prevent="submitTanggapanAspirasi($event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Ubah Status</label>
+                    <select name="status" class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                        <option value="diproses">Sedang Diproses</option>
+                        <option value="selesai">Selesai / Ditindaklanjuti</option>
+                        <option value="ditolak">Ditolak</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Uraian Tanggapan</label>
+                    <textarea name="tanggapan" rows="3" required placeholder="Tuliskan tindak lanjut resmi dari pengurus RT/RW..." class="w-full px-4 py-2 rounded-xl border border-slate-200 outline-none resize-none"></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="modalTanggapiAspirasi = null" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Kirim Respon</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Entry Point -->
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

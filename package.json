@@ -1,0 +1,8 @@
+{
+  "name": "sirw-digital",
+  "private": true,
+  "scripts": {
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "cd backend && php artisan serve --port=8000"
+  }
+}
