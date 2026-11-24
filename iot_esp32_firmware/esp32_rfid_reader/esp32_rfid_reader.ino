@@ -35,9 +35,9 @@
 
 // ================= PILIH BOARD YANG DIGUNAKAN =================
 // Aktifkan SALAH SATU baris define di bawah ini sesuai modul ESP32 Anda:
-#define USE_ARDUINO_NANO_ESP32   // <-- Aktif jika menggunakan Arduino Nano ESP32
+//#define USE_ARDUINO_NANO_ESP32   // <-- Aktif jika menggunakan Arduino Nano ESP32
 //#define USE_ESP32_S3           // <-- Aktif jika menggunakan ESP32-S3 Dev Module
-//#define USE_ESP32_DEVKIT       // <-- Aktif jika menggunakan ESP32 DevKit Standar (WROOM 30/38 pin)
+#define USE_ESP32_DEVKIT         // <-- Aktif jika menggunakan ESP32 DevKit Standar (WROOM 30/38 pin)
 
 #if defined(USE_ARDUINO_NANO_ESP32)
   // Pinout Arduino Nano ESP32
