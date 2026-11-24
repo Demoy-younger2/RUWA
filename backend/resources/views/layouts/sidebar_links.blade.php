@@ -165,7 +165,19 @@
 
 <!-- Kelompok 5: Sistem & Konfigurasi -->
 <div class="space-y-1">
-    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Sistem</p>
+    <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Sistem & IoT</p>
+
+    <!-- IoT e-KTP & RFID Reader ESP32 -->
+    <a href="{{ route('rfid.index') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('rfid.*') ? 'bg-indigo-50 text-indigo-700 font-bold shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-id-card w-4 text-center text-sm {{ request()->routeIs('rfid.*') ? 'text-indigo-600' : 'text-indigo-500' }}"></i>
+            <span>IoT e-KTP & RFID</span>
+        </div>
+        <span class="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+            ESP32
+        </span>
+    </a>
 
     <!-- Log Aktivitas & Audit -->
     <a href="{{ route('log-aktivitas.index') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition {{ request()->routeIs('log-aktivitas.*') ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">

@@ -53,45 +53,59 @@
                     </a>
                 </div>
 
-                <!-- Center: Quick Role Switcher (Developer & Tester Convenience) -->
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shadow-xs">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span class="truncate max-w-[130px] sm:max-w-none">{{ Auth::user()->role_title }}</span>
-                        <i class="fa-solid fa-chevron-down text-[10px] text-emerald-600"></i>
-                    </button>
+                <!-- Center: Quick Role Switcher + IoT RFID Badge -->
+                <div class="flex items-center gap-2">
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shadow-xs">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="truncate max-w-[130px] sm:max-w-none">{{ Auth::user()->role_title }}</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] text-emerald-600"></i>
+                        </button>
 
-                    <!-- Dropdown for fast switching between all 8 roles -->
-                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
-                        <div class="px-3 py-1.5 border-b border-slate-100 mb-1">
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Uji Coba Hak Akses Role</p>
-                        </div>
-                        @php
-                            $allRoles = [
-                                'superadmin' => ['Superadmin', 'fa-shield-halved', 'text-purple-600'],
-                                'rw' => ['Ketua RW', 'fa-building-columns', 'text-blue-600'],
-                                'rt' => ['Ketua RT 01', 'fa-house-user', 'text-emerald-600'],
-                                'sekretaris_rw' => ['Sekretaris RW', 'fa-file-signature', 'text-amber-600'],
-                                'bendahara_rw' => ['Bendahara RW', 'fa-money-bill-transfer', 'text-teal-600'],
-                                'sekretaris_rt' => ['Sekretaris RT 01', 'fa-pen-to-square', 'text-orange-600'],
-                                'bendahara_rt' => ['Bendahara RT 01', 'fa-wallet', 'text-lime-600'],
-                                'warga' => ['Warga (Budi)', 'fa-user', 'text-sky-600'],
-                            ];
-                        @endphp
-                        <div class="max-h-60 overflow-y-auto">
-                            @foreach($allRoles as $roleKey => $roleData)
-                                <a href="{{ route('quick.login', $roleKey) }}" class="flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition {{ Auth::user()->role === $roleKey ? 'bg-emerald-50 font-bold text-emerald-800' : '' }}">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fa-solid {{ $roleData[1] }} {{ $roleData[2] }} w-4 text-center"></i>
-                                        <span>{{ $roleData[0] }}</span>
-                                    </div>
-                                    @if(Auth::user()->role === $roleKey)
-                                        <i class="fa-solid fa-check text-emerald-600"></i>
-                                    @endif
-                                </a>
-                            @endforeach
+                        <!-- Dropdown for fast switching between all 8 roles -->
+                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
+                            <div class="px-3 py-1.5 border-b border-slate-100 mb-1">
+                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Uji Coba Hak Akses Role</p>
+                            </div>
+                            @php
+                                $allRoles = [
+                                    'superadmin' => ['Superadmin', 'fa-shield-halved', 'text-purple-600'],
+                                    'rw' => ['Ketua RW', 'fa-building-columns', 'text-blue-600'],
+                                    'rt' => ['Ketua RT 01', 'fa-house-user', 'text-emerald-600'],
+                                    'sekretaris_rw' => ['Sekretaris RW', 'fa-file-signature', 'text-amber-600'],
+                                    'bendahara_rw' => ['Bendahara RW', 'fa-money-bill-transfer', 'text-teal-600'],
+                                    'sekretaris_rt' => ['Sekretaris RT 01', 'fa-pen-to-square', 'text-orange-600'],
+                                    'bendahara_rt' => ['Bendahara RT 01', 'fa-wallet', 'text-lime-600'],
+                                    'warga' => ['Warga (Budi)', 'fa-user', 'text-sky-600'],
+                                ];
+                            @endphp
+                            <div class="max-h-60 overflow-y-auto">
+                                @foreach($allRoles as $roleKey => $roleData)
+                                    <a href="{{ route('quick.login', $roleKey) }}" class="flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition {{ Auth::user()->role === $roleKey ? 'bg-emerald-50 font-bold text-emerald-800' : '' }}">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid {{ $roleData[1] }} {{ $roleData[2] }} w-4 text-center"></i>
+                                            <span>{{ $roleData[0] }}</span>
+                                        </div>
+                                        @if(Auth::user()->role === $roleKey)
+                                            <i class="fa-solid fa-check text-emerald-600"></i>
+                                        @endif
+                                    </a>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Shortcut IoT RFID e-KTP -->
+                    <a href="{{ route('rfid.index') }}" title="Registrasi e-KTP / Kartu RFID (ESP32)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition shadow-xs {{ Auth::user()->rfid_uid ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100' : 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 animate-pulse' }}">
+                        <i class="fa-solid fa-id-card {{ Auth::user()->rfid_uid ? 'text-indigo-600' : 'text-amber-600' }}"></i>
+                        <span class="hidden sm:inline">
+                            @if(Auth::user()->rfid_uid)
+                                e-KTP: {{ substr(Auth::user()->rfid_uid, 0, 7) }}..
+                            @else
+                                + Daftarkan e-KTP
+                            @endif
+                        </span>
+                    </a>
                 </div>
 
                 <!-- Right: User Avatar + Logout -->

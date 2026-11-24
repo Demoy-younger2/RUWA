@@ -11,6 +11,7 @@ use App\Http\Controllers\KoperasiController;
 use App\Http\Controllers\LogAktivitasController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\PosyanduController;
+use App\Http\Controllers\RfidWebController;
 use App\Http\Controllers\RondaController;
 use App\Http\Controllers\RukemController;
 use App\Http\Controllers\SuratController;
@@ -124,4 +125,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/log-aktivitas', [LogAktivitasController::class, 'index'])->name('log-aktivitas.index');
     Route::delete('/log-aktivitas/{activity_log}', [LogAktivitasController::class, 'destroy'])->name('log-aktivitas.destroy');
     Route::post('/log-aktivitas/clear-all', [LogAktivitasController::class, 'clearAll'])->name('log-aktivitas.clear_all');
+
+    // 16. IoT e-KTP & RFID Reader ESP32
+    Route::get('/rfid-iot', [RfidWebController::class, 'index'])->name('rfid.index');
 });

@@ -26,6 +26,10 @@
 
             <!-- Quick Action Buttons -->
             <div class="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
+                <a href="{{ route('rfid.index') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">
+                    <i class="fa-solid fa-id-card text-indigo-200"></i>
+                    <span>Daftarkan e-KTP</span>
+                </a>
                 <a href="{{ route('surat.create') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-900 bg-white hover:bg-slate-100 shadow-md transition">
                     <i class="fa-solid fa-file-circle-plus text-emerald-600"></i>
                     <span>Ajukan Surat</span>
