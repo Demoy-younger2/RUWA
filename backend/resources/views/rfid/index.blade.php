@@ -11,10 +11,21 @@
                     <i class="fa-solid fa-id-card"></i>
                 </div>
                 <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">IoT e-KTP & RFID Reader</h1>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Sistem Aktif
-                </span>
+                
+                <!-- Status Perangkat ESP32 Realtime -->
+                <template x-if="deviceOnline">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>ESP32 Online</span>
+                        <span class="text-[9px] text-emerald-600 font-normal" x-text="'(' + devicePingText + ')'"></span>
+                    </span>
+                </template>
+                <template x-if="!deviceOnline">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        <span>ESP32 Offline / Menunggu Alat</span>
+                    </span>
+                </template>
             </div>
             <p class="text-xs text-slate-500 mt-1">
                 Layanan pendaftaran dan integrasi kartu identitas e-KTP / RFID warga berbasis mikrokontroler ESP32.
@@ -435,6 +446,40 @@ function rfidView(userId, userName, currentUid) {
         simulating: false,
         simulationLog: '',
         simSuccess: false,
+
+        // Realtime Device Status
+        deviceOnline: false,
+        devicePingText: 'mengecek...',
+        deviceIp: '',
+        deviceCheckTimer: null,
+
+        init() {
+            this.checkDeviceStatus();
+            this.deviceCheckTimer = setInterval(() => {
+                this.checkDeviceStatus();
+            }, 4000);
+        },
+
+        async checkDeviceStatus() {
+            try {
+                const res = await fetch('/api/rfid/device-status');
+                const data = await res.json();
+                this.deviceOnline = !!data.online;
+                if (data.online) {
+                    this.deviceIp = data.ip || '';
+                    if (data.seconds_ago <= 5) {
+                        this.devicePingText = 'Aktif Baru Saja';
+                    } else {
+                        this.devicePingText = data.seconds_ago + 's lalu';
+                    }
+                } else {
+                    this.devicePingText = 'Offline';
+                }
+            } catch (e) {
+                this.deviceOnline = false;
+                this.devicePingText = 'Offline';
+            }
+        },
 
         openModal() {
             this.showModal = true;

@@ -77,15 +77,19 @@ const char* WIFI_PASSWORD = "MIMPIibadah";   // Ganti dengan Password WiFi Anda
 
 // Alamat API Server Live VPS SiRW Digital (HTTPS):
 const char* API_URL       = "https://ruwa.unique-monsters.my.id/api/iot/rfid/scan";
+const char* HEARTBEAT_URL = "https://ruwa.unique-monsters.my.id/api/iot/rfid/heartbeat";
 const char* DEVICE_ID     = "ESP32-SCANNER-01";
 
 // Inisialisasi Objek Sensor MFRC522
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-// Variabel Debounce agar tidak spam tap berulang kali
+// Variabel Debounce & Timer Heartbeat Realtime
 unsigned long lastScanTime = 0;
 String lastScannedUid = "";
 const unsigned long SCAN_COOLDOWN = 2000; // 2 detik jeda
+
+unsigned long lastHeartbeatTime = 0;
+const unsigned long HEARTBEAT_INTERVAL = 15000; // Kirim heartbeat setiap 15 detik
 
 void triggerFeedback(bool isSuccess, int beeps = 1) {
   if (LED_INDICATOR >= 0) {
@@ -197,6 +201,8 @@ void setup() {
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
     triggerFeedback(true, 2);
+    // Kirim heartbeat pertama ke server
+    sendHeartbeat();
   } else {
     Serial.println("\n❌ [GAGAL TERHUBUNG]");
     Serial.println("   Status Error WiFi Code: " + String(WiFi.status()));
@@ -207,6 +213,14 @@ void setup() {
 }
 
 void loop() {
+  unsigned long now = millis();
+
+  // Kirim Heartbeat berkala setiap 15 detik agar status di web selalu realtime Online
+  if (WiFi.status() == WL_CONNECTED && (now - lastHeartbeatTime >= HEARTBEAT_INTERVAL)) {
+    lastHeartbeatTime = now;
+    sendHeartbeat();
+  }
+
   // Cek apakah ada kartu baru terdeteksi
   if (!mfrc522.PICC_IsNewCardPresent()) {
     return;
@@ -226,7 +240,6 @@ void loop() {
   cardUid.toUpperCase();
 
   // Hindari spam baca kartu yang sama dalam jeda 2 detik
-  unsigned long now = millis();
   if (cardUid == lastScannedUid && (now - lastScanTime < SCAN_COOLDOWN)) {
     mfrc522.PICC_HaltA();
     mfrc522.PCD_StopCrypto1();
@@ -246,6 +259,27 @@ void loop() {
   // Hentikan enkripsi & pembacaan kartu saat ini
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
+}
+
+void sendHeartbeat() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  HTTPClient http;
+  if (!http.begin(client, HEARTBEAT_URL)) return;
+
+  http.addHeader("Content-Type", "application/json");
+
+  String payload = "{\"device_id\":\"" + String(DEVICE_ID) + "\",\"ip\":\"" + WiFi.localIP().toString() + "\",\"rssi\":" + String(WiFi.RSSI()) + "}";
+  int code = http.POST(payload);
+
+  if (code > 0) {
+    Serial.println("💓 [PING/HEARTBEAT] Terkirim ke server SiRW. Web Status: ONLINE");
+  }
+
+  http.end();
 }
 
 void sendUidToServer(String uid) {

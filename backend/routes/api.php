@@ -91,4 +91,6 @@ Route::post('/rfid/manual-bind', [RfidController::class, 'manualRegister']);
 Route::post('/rfid/unbind', [RfidController::class, 'unbindCard']);
 Route::get('/rfid/logs', [RfidController::class, 'getLogs']);
 Route::match(['get', 'post'], '/iot/rfid/scan', [RfidController::class, 'handleEspScan']);
+Route::match(['get', 'post'], '/iot/rfid/heartbeat', [RfidController::class, 'handleHeartbeat']);
+Route::get('/rfid/device-status', [RfidController::class, 'getDeviceStatus']);
 Route::post('/iot/rfid/login', [RfidController::class, 'loginByRfid']);

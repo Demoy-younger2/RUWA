@@ -193,6 +193,17 @@ class RfidController extends Controller
 
         $uid = $this->cleanUid($rawUid);
 
+        // Catat device online heartbeat saat scan kartu
+        Cache::put('iot_device_status_' . $deviceId, [
+            'online' => true,
+            'device_id' => $deviceId,
+            'ip' => $request->ip(),
+            'rssi' => null,
+            'last_seen' => now()->toISOString(),
+            'timestamp' => now()->timestamp,
+        ], 45);
+        Cache::put('iot_latest_active_device', $deviceId, 45);
+
         // Ambil sesi pendaftaran aktif jika ada
         $activeSession = Cache::get(self::SESSION_CACHE_KEY);
 
@@ -396,6 +407,17 @@ class RfidController extends Controller
         }
 
         $uid = $this->cleanUid($rawUid);
+
+        // Catat device online heartbeat saat scan kartu
+        Cache::put('iot_device_status_' . $deviceId, [
+            'online' => true,
+            'device_id' => $deviceId,
+            'ip' => $request->ip(),
+            'rssi' => null,
+            'last_seen' => now()->toISOString(),
+            'timestamp' => now()->timestamp,
+        ], 45);
+        Cache::put('iot_latest_active_device', $deviceId, 45);
         $user = User::where('rfid_uid', $uid)->first();
 
         if (!$user) {
@@ -443,6 +465,69 @@ class RfidController extends Controller
         return response()->json([
             'success' => true,
             'logs' => $logs,
+        ]);
+    }
+
+    /**
+     * 9. Terima Heartbeat / Ping dari Perangkat ESP32 Realtime
+     */
+    public function handleHeartbeat(Request $request)
+    {
+        $deviceId = $request->input('device_id', 'ESP32-SCANNER-01');
+        $ip = $request->input('ip', $request->ip());
+        $rssi = $request->input('rssi');
+
+        $deviceInfo = [
+            'online' => true,
+            'device_id' => $deviceId,
+            'ip' => $ip,
+            'rssi' => $rssi,
+            'last_seen' => now()->toISOString(),
+            'timestamp' => now()->timestamp,
+        ];
+
+        // Simpan heartbeat aktif selama 45 detik
+        Cache::put('iot_device_status_' . $deviceId, $deviceInfo, 45);
+        Cache::put('iot_latest_active_device', $deviceId, 45);
+
+        return response()->json([
+            'success' => true,
+            'status' => 'online',
+            'message' => 'Heartbeat diterima.',
+            'server_time' => now()->toISOString(),
+        ]);
+    }
+
+    /**
+     * 10. Ambil Status Realtime Perangkat ESP32 untuk Tampilan Web
+     */
+    public function getDeviceStatus(Request $request)
+    {
+        $deviceId = $request->input('device_id') ?? Cache::get('iot_latest_active_device', 'ESP32-SCANNER-01');
+        $deviceInfo = Cache::get('iot_device_status_' . $deviceId);
+
+        if (!$deviceInfo) {
+            return response()->json([
+                'success' => true,
+                'online' => false,
+                'status' => 'offline',
+                'device_id' => $deviceId,
+                'message' => 'Perangkat ESP32 belum terhubung atau sedang offline.',
+            ]);
+        }
+
+        $secondsAgo = now()->timestamp - ($deviceInfo['timestamp'] ?? now()->timestamp);
+        $isOnline = $secondsAgo <= 35;
+
+        return response()->json([
+            'success' => true,
+            'online' => $isOnline,
+            'status' => $isOnline ? 'online' : 'offline',
+            'device_id' => $deviceInfo['device_id'],
+            'ip' => $deviceInfo['ip'],
+            'rssi' => $deviceInfo['rssi'],
+            'last_seen' => $deviceInfo['last_seen'],
+            'seconds_ago' => $secondsAgo,
         ]);
     }
 }
