@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ApiController;
+use App\Http\Controllers\Api\RfidController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -81,3 +82,13 @@ Route::get('/koperasi', [ApiController::class, 'getKoperasi']);
 // 12. Log Aktivitas & Pengaturan
 Route::get('/log-aktivitas', [ApiController::class, 'getLogAktivitas']);
 Route::get('/pengaturan', [ApiController::class, 'getPengaturan']);
+
+// 13. IoT RFID / NFC ESP32 & Manajemen Kartu e-KTP
+Route::post('/rfid/register-session', [RfidController::class, 'startRegisterSession']);
+Route::get('/rfid/status-session', [RfidController::class, 'checkRegisterSession']);
+Route::post('/rfid/cancel-session', [RfidController::class, 'cancelRegisterSession']);
+Route::post('/rfid/manual-bind', [RfidController::class, 'manualRegister']);
+Route::post('/rfid/unbind', [RfidController::class, 'unbindCard']);
+Route::get('/rfid/logs', [RfidController::class, 'getLogs']);
+Route::match(['get', 'post'], '/iot/rfid/scan', [RfidController::class, 'handleEspScan']);
+Route::post('/iot/rfid/login', [RfidController::class, 'loginByRfid']);

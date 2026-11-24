@@ -50,6 +50,20 @@
                     <span x-text="backendStatus === 'connected' ? 'API Backend Aktif (:8000)' : 'Menghubungkan Backend...'"></span>
                 </div>
 
+                <!-- RFID / e-KTP IoT Badge / Button -->
+                <button type="button" @click="openRfidModal()" 
+                        :class="currentUser.rfid_uid ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100' : 'bg-indigo-600 hover:bg-indigo-700 text-white'"
+                        class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition shadow-xs"
+                        :title="currentUser.rfid_uid ? 'e-KTP Terdaftar: UID ' + currentUser.rfid_uid : 'Daftarkan e-KTP / Kartu RFID via ESP32'">
+                    <i class="fa-solid fa-id-card" :class="currentUser.rfid_uid ? 'text-indigo-600' : 'text-indigo-200'"></i>
+                    <template x-if="currentUser.rfid_uid">
+                        <span class="font-mono text-[11px]" x-text="'UID: ' + currentUser.rfid_uid"></span>
+                    </template>
+                    <template x-if="!currentUser.rfid_uid">
+                        <span>Scan e-KTP</span>
+                    </template>
+                </button>
+
                 <!-- 8-Role Quick Switcher Dropdown -->
                 <div class="relative" x-data="{ open: false }">
                     <button @click="open = !open" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200 transition">
@@ -235,6 +249,13 @@
                         </div>
                         <span class="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-full font-bold">Audit</span>
                     </button>
+                    <button type="button" @click="currentView = 'rfid_iot'" :class="currentView === 'rfid_iot' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-id-card w-4 text-center text-indigo-600"></i>
+                            <span>IoT e-KTP & RFID</span>
+                        </div>
+                        <span class="text-[9px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded-md">ESP32</span>
+                    </button>
                     <button type="button" @click="currentView = 'pengaturan'" :class="currentView === 'pengaturan' ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-100'" class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition">
                         <i class="fa-solid fa-sliders w-4 text-center"></i>
                         <span>Pengaturan & RBAC</span>
@@ -361,6 +382,8 @@
                                 <th class="py-3.5 px-4">L/P</th>
                                 <th class="py-3.5 px-4">Wilayah RT</th>
                                 <th class="py-3.5 px-4">Status Tinggal</th>
+                                <th class="py-3.5 px-4">Kartu e-KTP (RFID)</th>
+                                <th class="py-3.5 px-4 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -372,6 +395,23 @@
                                     <td class="py-3 px-4 font-bold text-emerald-700" x-text="'RT ' + w.rt + ' / RW ' + w.rw"></td>
                                     <td class="py-3 px-4">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700" x-text="w.status_tinggal || 'Tetap'"></span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <template x-if="w.rfid_uid">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                <i class="fa-solid fa-id-card text-[10px]"></i>
+                                                <span x-text="w.rfid_uid"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="!w.rfid_uid">
+                                            <span class="text-[11px] text-slate-400 italic">Belum terdaftar</span>
+                                        </template>
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        <button type="button" @click="openRfidModal(w.user_id || w.id, w.nama_lengkap)" class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-[11px] transition">
+                                            <i class="fa-solid fa-id-card mr-1"></i>
+                                            <span x-text="w.rfid_uid ? 'Ganti Kartu' : 'Daftarkan'"></span>
+                                        </button>
                                     </td>
                                 </tr>
                             </template>
@@ -1115,6 +1155,256 @@
                 </div>
             </div>
 
+            <!-- VIEW: IOT RFID / NFC ESP32 & MANAJEMEN e-KTP -->
+            <div x-show="currentView === 'rfid_iot'" class="space-y-6">
+                <!-- Header View -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                <i class="fa-solid fa-microchip mr-1"></i> ESP32 IoT Engine
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <i class="fa-solid fa-wifi mr-1"></i> REST API Ready
+                            </span>
+                        </div>
+                        <h2 class="text-xl font-extrabold text-slate-900">Pusat Integrasi IoT RFID / NFC & e-KTP</h2>
+                        <p class="text-xs text-slate-500">Registrasi kartu e-KTP/RFID via scanner ESP32, perlindungan anti-duplikasi akun, dan audit tap otomatis.</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="openRfidModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition flex items-center gap-2">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Daftarkan e-KTP Baru</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grid Kartu Status & Info Sesi -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Kartu Status e-KTP Pengguna Login -->
+                    <div class="lg:col-span-1 rounded-3xl p-6 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+                        <div class="absolute -right-6 -bottom-6 text-white/5 text-9xl pointer-events-none">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-[10px] font-mono tracking-widest uppercase bg-white/10 px-2.5 py-1 rounded-lg">SiRW DIGITAL ID</span>
+                                <i class="fa-solid fa-wifi text-indigo-400 text-sm"></i>
+                            </div>
+
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-7 rounded-md bg-amber-400/80 border border-amber-300 flex items-center justify-center">
+                                    <div class="w-6 h-4 border border-amber-600/60 rounded-[3px] grid grid-cols-2 gap-0.5 p-0.5">
+                                        <div class="bg-amber-600/30"></div>
+                                        <div class="bg-amber-600/30"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold leading-tight" x-text="currentUser.name"></p>
+                                    <p class="text-[10px] text-indigo-200" x-text="currentUser.role_title + ' • NIK: ' + (currentUser.nik || '-')"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-white/10">
+                            <p class="text-[10px] text-indigo-200 uppercase font-semibold mb-1">Status Kartu e-KTP / RFID</p>
+                            <template x-if="currentUser.rfid_uid">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="font-mono text-sm sm:text-base font-extrabold tracking-wider text-emerald-400" x-text="'UID: ' + currentUser.rfid_uid"></span>
+                                        <span class="block text-[10px] text-emerald-300">✓ Terverifikasi & Aktif</span>
+                                    </div>
+                                    <button type="button" @click="unbindRfid()" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/40 text-rose-200 text-[10px] font-bold transition">
+                                        Lepas
+                                    </button>
+                                </div>
+                            </template>
+                            <template x-if="!currentUser.rfid_uid">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-amber-300 font-semibold italic">Belum Ada Kartu Terdaftar</span>
+                                    <button type="button" @click="openRfidModal()" class="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold transition">
+                                        Scan Sekarang
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Panel Fitur & Proteksi Keamanan Anti-Duplikasi -->
+                    <div class="lg:col-span-2 rounded-3xl bg-white border border-slate-200 p-6 shadow-xs flex flex-col justify-between space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved text-indigo-600"></i>
+                                <span>Standar Validasi & Proteksi Keamanan IoT</span>
+                            </h3>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">Multi-Akun Guard</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-1">
+                                <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs mb-1">
+                                    <i class="fa-solid fa-fingerprint"></i>
+                                </div>
+                                <h4 class="font-bold text-indigo-900">Anti-Duplikasi Ketat</h4>
+                                <p class="text-[11px] text-indigo-700 leading-relaxed">UID kartu yang telah terdaftar pada satu akun secara otomatis DITOLAK jika dicoba didaftarkan ke akun lain.</p>
+                            </div>
+
+                            <div class="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-1">
+                                <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs mb-1">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
+                                <h4 class="font-bold text-emerald-900">Realtime Session Pairing</h4>
+                                <p class="text-[11px] text-emerald-700 leading-relaxed">User memulai sesi scan di web, lalu tempelkan e-KTP ke ESP32. Kartu langsung terpasang dalam hitungan detik.</p>
+                            </div>
+
+                            <div class="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-100 space-y-1">
+                                <div class="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs mb-1">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                </div>
+                                <h4 class="font-bold text-purple-900">Dukungan Kartu Luas</h4>
+                                <p class="text-[11px] text-purple-700 leading-relaxed">Mendukung e-KTP Indonesia, Kartu Akses Mifare 1K, NFC NTAG213/215/216, dan E-Money (13.56 MHz).</p>
+                            </div>
+                        </div>
+
+                        <!-- Panel Simulasi Cepat ESP32 -->
+                        <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div class="flex items-center gap-2 text-slate-500">
+                                <span class="font-bold text-slate-700">Lab Pengujian:</span>
+                                <span>Coba kirim sinyal simulasi ESP32:</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="simulateEspTap('04A1B2C3')" class="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-[11px] transition">
+                                    Test Tap UID Baru (04A1B2C3)
+                                </button>
+                                <button type="button" @click="simulateEspTap(currentUser.rfid_uid || '99TEST01')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
+                                    Test Tap Kartu Saya
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabel Riwayat Pemindaian RFID Realtime -->
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-extrabold text-slate-900">Riwayat Tap & Pemindaian Kartu (Live IoT Log)</h3>
+                            <p class="text-xs text-slate-500">Catatan tap kartu e-KTP dari perangkat ESP32 pos keamanan dan pendaftaran warga</p>
+                        </div>
+                        <button type="button" @click="loadAllData()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-rotate mr-1"></i> Refresh Log
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold">
+                                <tr>
+                                    <th class="py-3 px-4">Waktu</th>
+                                    <th class="py-3 px-4">Device ID</th>
+                                    <th class="py-3 px-4">UID Kartu</th>
+                                    <th class="py-3 px-4">Pengguna Terkait</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="log in (rfidLogs || [])" :key="log.id">
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="py-3 px-4 text-slate-500 font-mono text-[11px]" x-text="new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + formatDate(log.created_at)"></td>
+                                        <td class="py-3 px-4 font-mono text-[11px] text-slate-700 font-semibold" x-text="log.device_id"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[11px]" x-text="log.rfid_uid"></span>
+                                        </td>
+                                        <td class="py-3 px-4 font-bold text-slate-900" x-text="log.user ? log.user.name : '-'"></td>
+                                        <td class="py-3 px-4">
+                                            <template x-if="log.status === 'registered'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Registrasi Sukses</span>
+                                            </template>
+                                            <template x-if="log.status === 'recognized'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Akses Diterima</span>
+                                            </template>
+                                            <template x-if="log.status === 'rejected_duplicate'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Ditolak (Duplikat)</span>
+                                            </template>
+                                            <template x-if="log.status === 'unregistered'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Belum Terdaftar</span>
+                                            </template>
+                                        </td>
+                                        <td class="py-3 px-4 text-slate-600 text-[11px]" x-text="log.message || '-'"></td>
+                                    </tr>
+                                </template>
+                                <tr x-show="!rfidLogs || rfidLogs.length === 0">
+                                    <td colspan="6" class="py-8 text-center text-slate-400 italic">Belum ada riwayat tap kartu RFID. Silakan coba tap via scanner ESP32.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Petunjuk Wiring ESP32 & Skema Hardware -->
+                <div class="rounded-3xl bg-slate-900 text-white p-6 space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-code text-indigo-400"></i>
+                            <h3 class="text-sm font-extrabold text-white">Panduan Hardware ESP32 & Pinout RC522</h3>
+                        </div>
+                        <span class="text-[11px] font-mono text-indigo-300">SPI Interface</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-amber-300 uppercase text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-microchip"></i>
+                                <span>Arduino Nano ESP32:</span>
+                            </h4>
+                            <div class="bg-slate-800/80 rounded-2xl p-3.5 font-mono text-[11px] space-y-1 text-slate-300 border border-slate-700/60">
+                                <p><span class="text-amber-400">SDA (SS)</span> ---> <span class="text-emerald-400">Pin D10</span> / GPIO 21</p>
+                                <p><span class="text-amber-400">SCK</span>      ---> <span class="text-emerald-400">Pin D13</span> / GPIO 48</p>
+                                <p><span class="text-amber-400">MOSI</span>     ---> <span class="text-emerald-400">Pin D11</span> / GPIO 38</p>
+                                <p><span class="text-amber-400">MISO</span>     ---> <span class="text-emerald-400">Pin D12</span> / GPIO 47</p>
+                                <p><span class="text-amber-400">RST</span>      ---> <span class="text-emerald-400">Pin D9</span>  / GPIO 18</p>
+                                <p><span class="text-amber-400">GND</span>      ---> <span class="text-emerald-400">GND</span></p>
+                                <p><span class="text-amber-400">3.3V</span>     ---> <span class="text-emerald-400">3V3</span> <span class="text-rose-400 text-[9px]">(Jangan ke 5V!)</span></p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-indigo-300 uppercase text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-microchip"></i>
+                                <span>ESP32 DevKit (30/38 pin):</span>
+                            </h4>
+                            <div class="bg-slate-800/80 rounded-2xl p-3.5 font-mono text-[11px] space-y-1 text-slate-300 border border-slate-700/60">
+                                <p><span class="text-amber-400">SDA (SS)</span> ---> <span class="text-emerald-400">GPIO 5</span></p>
+                                <p><span class="text-amber-400">SCK</span>      ---> <span class="text-emerald-400">GPIO 18</span></p>
+                                <p><span class="text-amber-400">MOSI</span>     ---> <span class="text-emerald-400">GPIO 23</span></p>
+                                <p><span class="text-amber-400">MISO</span>     ---> <span class="text-emerald-400">GPIO 19</span></p>
+                                <p><span class="text-amber-400">RST</span>      ---> <span class="text-emerald-400">GPIO 22</span></p>
+                                <p><span class="text-amber-400">GND</span>      ---> <span class="text-emerald-400">GND</span></p>
+                                <p><span class="text-amber-400">3.3V</span>     ---> <span class="text-emerald-400">3.3V</span></p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-emerald-300 uppercase text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-network-wired"></i>
+                                <span>Endpoint API SiRW:</span>
+                            </h4>
+                            <div class="bg-slate-800/80 rounded-2xl p-3.5 font-mono text-[11px] space-y-2 text-slate-300 border border-slate-700/60">
+                                <p class="text-emerald-400 font-bold text-[10px] break-all">POST /api/iot/rfid/scan</p>
+                                <p class="text-slate-400 text-[10px]">Content-Type: application/json</p>
+                                <pre class="text-amber-300 text-[10px] bg-slate-900/80 p-2 rounded-lg">{
+  "uid": "04A1B2C3",
+  "device_id": "ESP32-READER"
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- VIEW: PORTAL WARGA / CEK SURAT PUBLIK -->
             <div x-show="currentView === 'welcome'" class="space-y-6">
                 <div class="p-8 rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 text-white shadow-xl space-y-4">
@@ -1336,6 +1626,7 @@
                     <button type="button" @click="currentView = 'aset'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Aset & Fasilitas</button>
                     <button type="button" @click="currentView = 'aspirasi'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Aspirasi Warga</button>
                     <button type="button" @click="currentView = 'log_aktivitas'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block">Log Aktivitas</button>
+                    <button type="button" @click="currentView = 'rfid_iot'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-indigo-50 text-indigo-700 font-bold block">💳 IoT e-KTP & RFID</button>
                     <button type="button" @click="currentView = 'welcome'; sidebarOpen = false" class="w-full text-left py-2 px-3 rounded-xl hover:bg-slate-50 block text-emerald-700 font-bold">Portal Warga (Publik)</button>
                 </div>
             </div>
@@ -1988,6 +2279,190 @@
                     <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-md">Kirim Respon</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: SCAN & REGISTRASI e-KTP / RFID (ESP32) -->
+    <div x-show="modalRfid.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative" @click.away="closeRfidModal()">
+            <!-- Header Modal -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900">Registrasi e-KTP / Kartu RFID</h3>
+                        <p class="text-xs text-slate-500">Mendaftarkan untuk: <span class="font-bold text-indigo-700" x-text="modalRfid.targetUserName || currentUser.name"></span></p>
+                    </div>
+                </div>
+                <button type="button" @click="closeRfidModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Tab Navigasi Modal -->
+            <div class="flex rounded-xl bg-slate-100 p-1 text-xs font-bold text-slate-600">
+                <button type="button" @click="modalRfid.tab = 'esp32'; startRfidSession()" 
+                        :class="modalRfid.tab === 'esp32' ? 'bg-white text-indigo-700 shadow-xs' : 'hover:text-slate-900'"
+                        class="flex-1 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>Scan via ESP32</span>
+                </button>
+                <button type="button" @click="modalRfid.tab = 'manual'; stopRfidPolling()" 
+                        :class="modalRfid.tab === 'manual' ? 'bg-white text-indigo-700 shadow-xs' : 'hover:text-slate-900'"
+                        class="flex-1 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-keyboard"></i>
+                    <span>Input Manual / USB</span>
+                </button>
+                <button type="button" @click="modalRfid.tab = 'simulate'" 
+                        :class="modalRfid.tab === 'simulate' ? 'bg-white text-indigo-700 shadow-xs' : 'hover:text-slate-900'"
+                        class="flex-1 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-flask"></i>
+                    <span>Simulasi Test</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: SCAN VIA ESP32 (REALTIME IOT) -->
+            <div x-show="modalRfid.tab === 'esp32'" class="space-y-4">
+                <!-- Status Menunggu Tap (Waiting) -->
+                <div x-show="modalRfid.status === 'waiting'" class="p-6 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-center space-y-4">
+                    <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+                        <span class="absolute inset-0 rounded-full bg-indigo-400/20 animate-ping"></span>
+                        <div class="relative w-16 h-16 rounded-full bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-indigo-600/30">
+                            <i class="fa-solid fa-wifi rotate-90"></i>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-extrabold text-indigo-950">Sensor ESP32 Aktif & Siap Membaca</h4>
+                        <p class="text-xs text-indigo-700 mt-1 max-w-xs mx-auto">
+                            Silakan tempelkan kartu e-KTP atau RFID Anda ke reader ESP32...
+                        </p>
+                    </div>
+
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-200 text-xs text-indigo-700 font-mono font-bold">
+                        <i class="fa-solid fa-clock"></i>
+                        <span>Sisa Waktu Sesi: <span x-text="modalRfid.countdown + 's'"></span></span>
+                    </div>
+                </div>
+
+                <!-- Status Sukses Terdaftar (Registered) -->
+                <div x-show="modalRfid.status === 'registered'" class="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+                    <div class="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center text-2xl mx-auto shadow-md shadow-emerald-500/20">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-extrabold text-emerald-950">Kartu e-KTP Berhasil Didaftarkan!</h4>
+                        <p class="text-xs text-emerald-700 mt-1" x-text="modalRfid.message"></p>
+                    </div>
+                    <div class="inline-block px-4 py-1.5 rounded-xl bg-white border border-emerald-300 font-mono text-sm font-extrabold text-emerald-800" x-text="'UID: ' + (currentUser.rfid_uid || modalRfid.uidInput)"></div>
+                </div>
+
+                <!-- Status Ditolak Karena Duplikat (Rejected Duplicate) -->
+                <div x-show="modalRfid.status === 'rejected_duplicate'" class="p-5 rounded-2xl bg-rose-50 border border-rose-300 text-center space-y-3">
+                    <div class="w-14 h-14 rounded-full bg-rose-600 text-white flex items-center justify-center text-2xl mx-auto shadow-md shadow-rose-600/20 animate-bounce">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-extrabold text-rose-950">PENDAFTARAN KARTU DITOLAK!</h4>
+                        <p class="text-xs text-rose-700 mt-1 font-semibold" x-text="modalRfid.message"></p>
+                    </div>
+                    <p class="text-[11px] text-rose-600 bg-white/80 p-2.5 rounded-xl border border-rose-200">
+                        Satu kartu e-KTP/RFID hanya dapat diikat pada 1 akun warga saja demi keamanan dan pencegahan penyalahgunaan.
+                    </p>
+                </div>
+
+                <!-- Status Error / Timeout -->
+                <div x-show="modalRfid.status === 'error'" class="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center text-xl mx-auto">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-extrabold text-amber-950">Waktu Sesi Habis</h4>
+                        <p class="text-xs text-amber-700 mt-1" x-text="modalRfid.message"></p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons Tab ESP32 -->
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" @click="startRfidSession()" class="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>Ulangi Scan</span>
+                    </button>
+                    <button type="button" @click="closeRfidModal()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">
+                        Selesai / Tutup
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: INPUT MANUAL / SCANNER USB -->
+            <div x-show="modalRfid.tab === 'manual'" class="space-y-4">
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <label class="block text-xs font-bold text-slate-800 uppercase">
+                        Nomor UID Kartu e-KTP / RFID
+                    </label>
+                    <div class="relative">
+                        <input type="text" x-model="modalRfid.uidInput" placeholder="Contoh: 04A1B2C3 atau E2000019" 
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase tracking-wider outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        Masukkan UID kartu (biasanya 8 - 14 karakter heksadesimal). Bisa menggunakan RFID USB Reader Plug & Play atau input manual.
+                    </p>
+                </div>
+
+                <!-- Pesan Error Duplikat di Form Manual -->
+                <div x-show="modalRfid.status === 'rejected_duplicate'" class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600 mt-0.5"></i>
+                    <span x-text="modalRfid.message"></span>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="closeRfidModal()" class="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600 text-xs">
+                        Batal
+                    </button>
+                    <button type="button" @click="submitManualRfid()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20">
+                        Simpan & Daftarkan
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 3: SIMULASI PENGUJIAN CEPAT -->
+            <div x-show="modalRfid.tab === 'simulate'" class="space-y-4">
+                <div class="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-2">
+                    <h4 class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                        <i class="fa-solid fa-flask text-indigo-600"></i>
+                        <span>Uji Coba Validasi IoT Langsung dari Browser</span>
+                    </h4>
+                    <p class="text-[11px] text-indigo-800 leading-relaxed">
+                        Fitur ini mensimulasikan tap dari hardware ESP32 ke server secara langsung untuk menguji skenario pendaftaran sukses dan penolakan kartu yang sudah dipakai akun lain.
+                    </p>
+                </div>
+
+                <div class="space-y-2 text-xs">
+                    <button type="button" @click="simulateEspTap('04NEW' + Math.floor(1000 + Math.random() * 9000))" class="w-full text-left p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/70 transition flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-emerald-900 block">1. Simulasi Tap Kartu Baru (Unik)</span>
+                            <span class="text-[10px] text-emerald-700">Akan berhasil mendaftarkan kartu jika sesi scan sedang aktif</span>
+                        </div>
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+                    </button>
+
+                    <button type="button" @click="simulateEspTap('04A1B2C3')" class="w-full text-left p-3 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100/70 transition flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-rose-900 block">2. Simulasi Tap Kartu Duplikat (04A1B2C3)</span>
+                            <span class="text-[10px] text-rose-700">Menguji proteksi: jika UID ini sudah terdaftar di akun lain, server akan menolak</span>
+                        </div>
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i>
+                    </button>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="button" @click="closeRfidModal()" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">
+                        Tutup
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -103,6 +103,7 @@ class ApiController extends Controller
                 'rw' => $user->rw,
                 'nik' => $user->nik,
                 'phone' => $user->phone,
+                'rfid_uid' => $user->rfid_uid,
             ],
         ]);
     }
@@ -133,6 +134,7 @@ class ApiController extends Controller
                 'rw' => $user->rw,
                 'nik' => $user->nik,
                 'phone' => $user->phone,
+                'rfid_uid' => $user->rfid_uid,
             ],
         ]);
     }

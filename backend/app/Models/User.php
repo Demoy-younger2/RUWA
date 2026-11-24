@@ -21,6 +21,8 @@ class User extends Authenticatable
         'rw',
         'avatar',
         'status',
+        'rfid_uid',
+        'rfid_registered_at',
     ];
 
     protected $hidden = [

@@ -22,6 +22,7 @@ window.appState = () => ({
         role_title: 'Ketua RW',
         rt: '01',
         rw: '05',
+        rfid_uid: null,
     },
 
     // 8 Roles Configuration
@@ -85,6 +86,19 @@ window.appState = () => ({
     toastMessage: '',
     toastType: 'success',
 
+    // IoT RFID / NFC ESP32 State
+    modalRfid: {
+        show: false,
+        tab: 'esp32', // esp32, manual, simulate
+        status: 'idle', // idle, waiting, registered, rejected_duplicate, error
+        message: '',
+        uidInput: '',
+        simulatedUid: '04A1B2C3',
+        pollInterval: null,
+        countdown: 90,
+    },
+    rfidLogs: [],
+
     // Cek Surat Mandiri
     cekSuratNomor: '',
     cekSuratResult: null,
@@ -146,7 +160,13 @@ window.appState = () => ({
             };
             this.showToast(`Berhasil berganti peran ke ${found.title} (${found.name})`);
             try {
-                await axios.post(`${API_BASE}/auth/quick-login/${roleKey}`);
+                const res = await axios.post(`${API_BASE}/auth/quick-login/${roleKey}`);
+                if (res.data?.user) {
+                    this.currentUser = {
+                        ...this.currentUser,
+                        ...res.data.user
+                    };
+                }
             } catch (e) {
                 // silent
             }
@@ -173,7 +193,8 @@ window.appState = () => ({
                 aspirasiRes,
                 asetRes,
                 kopRes,
-                logRes
+                logRes,
+                rfidRes
             ] = await Promise.allSettled([
                 axios.get(`${API_BASE}/stats`),
                 axios.get(`${API_BASE}/warga`),
@@ -191,7 +212,8 @@ window.appState = () => ({
                 axios.get(`${API_BASE}/aspirasi`),
                 axios.get(`${API_BASE}/aset`),
                 axios.get(`${API_BASE}/koperasi?user_id=${this.currentUser.id}`),
-                axios.get(`${API_BASE}/log-aktivitas`)
+                axios.get(`${API_BASE}/log-aktivitas`),
+                axios.get(`${API_BASE}/rfid/logs`)
             ]);
 
             if (statsRes.status === 'fulfilled') this.stats = statsRes.value.data.stats || {};
@@ -217,6 +239,7 @@ window.appState = () => ({
             }
             if (kopRes.status === 'fulfilled') this.koperasi = kopRes.value.data || {};
             if (logRes.status === 'fulfilled') this.logs = logRes.value.data.data || logRes.value.data || [];
+            if (rfidRes && rfidRes.status === 'fulfilled') this.rfidLogs = rfidRes.value.data.logs || [];
         } catch (e) {
             console.error('Error loading data:', e);
         }
@@ -714,6 +737,161 @@ window.appState = () => ({
             await this.loadAllData();
         } catch (err) {
             this.showToast('Gagal meminjam aset', 'error');
+        }
+    },
+
+    // ==========================================
+    // RFID / NFC IoT & ESP32 Management
+    // ==========================================
+    openRfidModal(targetUserId = null, targetUserName = null) {
+        this.modalRfid.show = true;
+        this.modalRfid.tab = 'esp32';
+        this.modalRfid.status = 'idle';
+        this.modalRfid.message = '';
+        this.modalRfid.uidInput = '';
+        this.modalRfid.countdown = 90;
+        this.modalRfid.targetUserId = targetUserId || this.currentUser.id;
+        this.modalRfid.targetUserName = targetUserName || this.currentUser.name;
+        this.startRfidSession();
+    },
+
+    async startRfidSession() {
+        this.stopRfidPolling();
+        this.modalRfid.status = 'waiting';
+        this.modalRfid.message = 'Menunggu kartu e-KTP / RFID ditempelkan ke ESP32...';
+        this.modalRfid.countdown = 90;
+
+        try {
+            await axios.post(`${API_BASE}/rfid/register-session`, {
+                user_id: this.modalRfid.targetUserId || this.currentUser.id
+            });
+
+            // Timer hitung mundur
+            this.modalRfid.countdownTimer = setInterval(() => {
+                if (this.modalRfid.countdown > 0) {
+                    this.modalRfid.countdown--;
+                } else {
+                    this.modalRfid.status = 'error';
+                    this.modalRfid.message = 'Waktu sesi habis (timeout). Silakan klik Ulangi Scan.';
+                    this.stopRfidPolling();
+                }
+            }, 1000);
+
+            // Polling status dari ESP32 setiap 1.5 detik
+            this.modalRfid.pollInterval = setInterval(async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/rfid/status-session`);
+                    const data = res.data;
+
+                    if (data.status === 'registered') {
+                        this.modalRfid.status = 'registered';
+                        this.modalRfid.message = `Kartu e-KTP (UID: ${data.rfid_uid}) BERHASIL terdaftar untuk ${data.user_name || this.modalRfid.targetUserName}!`;
+                        if (this.modalRfid.targetUserId === this.currentUser.id) {
+                            this.currentUser.rfid_uid = data.rfid_uid;
+                        }
+                        this.showToast(this.modalRfid.message, 'success');
+                        this.stopRfidPolling();
+                        await this.loadAllData();
+                    } else if (data.status === 'rejected_duplicate') {
+                        this.modalRfid.status = 'rejected_duplicate';
+                        this.modalRfid.message = data.error_message || 'Kartu sudah terdaftar pada akun lain dan tidak bisa digunakan!';
+                        this.showToast(this.modalRfid.message, 'error');
+                        this.stopRfidPolling();
+                        await this.loadAllData();
+                    } else if (data.status === 'error') {
+                        this.modalRfid.status = 'error';
+                        this.modalRfid.message = data.error_message || 'Terjadi kesalahan saat membaca kartu.';
+                        this.stopRfidPolling();
+                    }
+                } catch (err) {
+                    // silent polling error
+                }
+            }, 1500);
+
+        } catch (e) {
+            this.modalRfid.status = 'error';
+            this.modalRfid.message = e.response?.data?.message || 'Gagal memulai sesi pendaftaran RFID.';
+        }
+    },
+
+    stopRfidPolling() {
+        if (this.modalRfid.pollInterval) {
+            clearInterval(this.modalRfid.pollInterval);
+            this.modalRfid.pollInterval = null;
+        }
+        if (this.modalRfid.countdownTimer) {
+            clearInterval(this.modalRfid.countdownTimer);
+            this.modalRfid.countdownTimer = null;
+        }
+    },
+
+    async closeRfidModal() {
+        this.stopRfidPolling();
+        try {
+            await axios.post(`${API_BASE}/rfid/cancel-session`);
+        } catch (e) {}
+        this.modalRfid.show = false;
+    },
+
+    async submitManualRfid() {
+        if (!this.modalRfid.uidInput || this.modalRfid.uidInput.trim().length < 4) {
+            this.showToast('Masukkan UID kartu minimal 4 karakter!', 'error');
+            return;
+        }
+
+        try {
+            const res = await axios.post(`${API_BASE}/rfid/manual-bind`, {
+                user_id: this.modalRfid.targetUserId || this.currentUser.id,
+                rfid_uid: this.modalRfid.uidInput.trim(),
+                device_id: 'WEB-MANUAL'
+            });
+
+            this.modalRfid.status = 'registered';
+            this.modalRfid.message = res.data.message;
+            if (this.modalRfid.targetUserId === this.currentUser.id) {
+                this.currentUser.rfid_uid = res.data.rfid_uid;
+            }
+            this.showToast(res.data.message, 'success');
+            await this.loadAllData();
+            setTimeout(() => {
+                this.closeRfidModal();
+            }, 1500);
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Gagal mendaftarkan kartu.';
+            this.modalRfid.status = 'rejected_duplicate';
+            this.modalRfid.message = msg;
+            this.showToast(msg, 'error');
+        }
+    },
+
+    async unbindRfid(userId = null) {
+        if (!confirm('Apakah Anda yakin ingin melepas pendaftaran kartu e-KTP / RFID ini?')) return;
+        const targetId = userId || this.currentUser.id;
+        try {
+            const res = await axios.post(`${API_BASE}/rfid/unbind`, { user_id: targetId });
+            if (targetId === this.currentUser.id) {
+                this.currentUser.rfid_uid = null;
+            }
+            this.showToast(res.data.message || 'Kartu berhasil dilepas.', 'success');
+            await this.loadAllData();
+        } catch (err) {
+            this.showToast('Gagal melepas kartu.', 'error');
+        }
+    },
+
+    async simulateEspTap(uid = null) {
+        const tapUid = uid || this.modalRfid.simulatedUid || '04A1B2C3';
+        try {
+            const res = await axios.post(`${API_BASE}/iot/rfid/scan`, {
+                uid: tapUid,
+                device_id: 'ESP32-DEV-SIMULATOR'
+            });
+            this.showToast(`[Simulasi ESP32] ${res.data.message}`, 'success');
+            await this.loadAllData();
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Simulasi scan ditolak';
+            this.showToast(`[Simulasi ESP32] ${msg}`, 'error');
+            await this.loadAllData();
         }
     },
 

@@ -28,6 +28,7 @@ class Warga extends Model
         'alamat',
         'no_hp',
         'foto',
+        'rfid_uid',
     ];
 
     protected $casts = [
