@@ -141,26 +141,66 @@ void setup() {
     Serial.println("✅ [OK] Sensor RFID-RC522 Berhasil Terdeteksi!");
   }
 
-  // Koneksi WiFi
-  Serial.print("Menghubungkan ke WiFi: ");
-  Serial.println(WIFI_SSID);
+  // ================= KONEKSI WIFI DENGAN DIAGNOSA OTOMATIS =================
+  Serial.println("\n--- Memindai Jaringan WiFi 2.4 GHz di Sekitar ---");
   WiFi.mode(WIFI_STA);
+  WiFi.disconnect(true);
+  delay(100);
+
+  int n = WiFi.scanNetworks();
+  bool ssidDitemukan = false;
+  if (n == 0) {
+    Serial.println("⚠️ Tidak ada jaringan WiFi yang terdeteksi di sekitar!");
+  } else {
+    Serial.print("Ditemukan ");
+    Serial.print(n);
+    Serial.println(" jaringan WiFi:");
+    for (int i = 0; i < n; ++i) {
+      Serial.print("   ");
+      Serial.print(i + 1);
+      Serial.print(". \"");
+      Serial.print(WiFi.SSID(i));
+      Serial.print("\" (Sinyal: ");
+      Serial.print(WiFi.RSSI(i));
+      Serial.println(" dBm)");
+      if (WiFi.SSID(i) == WIFI_SSID) {
+        ssidDitemukan = true;
+      }
+    }
+  }
+
+  if (!ssidDitemukan) {
+    Serial.println("\n⚠️ [PERINGATAN] Nama WiFi \"" + String(WIFI_SSID) + "\" TIDAK DITEMUKAN di daftar scan!");
+    Serial.println("   👉 ESP32 HANYA MENDUKUNG FREKUENSI 2.4 GHz (TIDAK BISA 5 GHz).");
+    Serial.println("   👉 Jika memakai Hotspot HP: Masuk ke Pengaturan Hotspot -> ganti AP Band ke \"2.4 GHz\".");
+  }
+
+  Serial.print("\nMenghubungkan ke WiFi: \"");
+  Serial.print(WIFI_SSID);
+  Serial.println("\"...");
+
+  WiFi.setSleep(false); // Maksimalkan daya radio WiFi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   int wifiTimeout = 0;
-  while (WiFi.status() != WL_CONNECTED && wifiTimeout < 30) {
+  while (WiFi.status() != WL_CONNECTED && wifiTimeout < 40) {
     delay(500);
     Serial.print(".");
     wifiTimeout++;
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n✅ [OK] WiFi Terhubung!");
-    Serial.print("IP Address ESP32: ");
+    Serial.println("\n✅ [OK] WiFi BERHASIL TERHUBUNG!");
+    Serial.print("   IP Address ESP32: ");
     Serial.println(WiFi.localIP());
+    Serial.print("   Kekuatan Sinyal : ");
+    Serial.print(WiFi.RSSI());
+    Serial.println(" dBm");
     triggerFeedback(true, 2);
   } else {
-    Serial.println("\n❌ [GAGAL] Belum terhubung ke WiFi. Tetap mencoba di background...");
+    Serial.println("\n❌ [GAGAL TERHUBUNG]");
+    Serial.println("   Status Error WiFi Code: " + String(WiFi.status()));
+    Serial.println("   Periksa apakah password WiFi sudah benar dan huruf besar/kecil tepat.");
   }
 
   Serial.println("\n>> Scanner Siap. Silakan tempelkan kartu e-KTP / RFID Mifare...");
