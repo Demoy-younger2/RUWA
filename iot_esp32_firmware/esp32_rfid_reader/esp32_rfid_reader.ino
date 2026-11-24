@@ -31,12 +31,13 @@
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <MFRC522.h>
-#include <ArduinoJson.h> // Install via Arduino Library Manager: "ArduinoJson" by Benoit Blanchon
+// Note: Tanpa dependency ArduinoJson agar langsung bisa dicompile tanpa instalasi tambahan!
 
 // ================= PILIH BOARD YANG DIGUNAKAN =================
-// Aktifkan SALAH SATU baris define di bawah ini sesuai board Anda:
-#define USE_ARDUINO_NANO_ESP32   // <-- Hapus komentar ini jika menggunakan Arduino Nano ESP32
-//#define USE_ESP32_DEVKIT        // <-- Hapus komentar ini jika menggunakan ESP32 Standar (30/38 pin)
+// Aktifkan SALAH SATU baris define di bawah ini sesuai modul ESP32 Anda:
+#define USE_ARDUINO_NANO_ESP32   // <-- Aktif jika menggunakan Arduino Nano ESP32
+//#define USE_ESP32_S3           // <-- Aktif jika menggunakan ESP32-S3 Dev Module
+//#define USE_ESP32_DEVKIT       // <-- Aktif jika menggunakan ESP32 DevKit Standar (WROOM 30/38 pin)
 
 #if defined(USE_ARDUINO_NANO_ESP32)
   // Pinout Arduino Nano ESP32
@@ -47,11 +48,22 @@
     #define SS_PIN    21   // D10 / GPIO 21
     #define RST_PIN   18   // D9  / GPIO 18
   #endif
-  #define LED_INDICATOR LED_BUILTIN
-  #define BUZZER_PIN    -1  // Opsional: atur pin buzzer jika ada (misal D2 / GPIO 5)
+  #ifndef LED_BUILTIN
+    #define LED_INDICATOR 13
+  #else
+    #define LED_INDICATOR LED_BUILTIN
+  #endif
+  #define BUZZER_PIN    -1  // Opsional: pin buzzer jika ada (misal D2 / GPIO 5)
+
+#elif defined(USE_ESP32_S3)
+  // Pinout ESP32-S3 Dev Module
+  #define SS_PIN    10  // SDA (SS)
+  #define RST_PIN   9   // RST
+  #define LED_INDICATOR -1
+  #define BUZZER_PIN    -1
 
 #else
-  // Pinout ESP32 DevKit Standar (30/38 Pin)
+  // Pinout ESP32 DevKit Standar (30/38 Pin WROOM)
   #define SS_PIN    5   // SDA / SS Pin
   #define RST_PIN   22  // Reset Pin
   #define LED_INDICATOR 2   // Built-in LED atau GPIO 2
@@ -76,9 +88,9 @@ String lastScannedUid = "";
 const unsigned long SCAN_COOLDOWN = 2000; // 2 detik jeda
 
 void triggerFeedback(bool isSuccess, int beeps = 1) {
-  #if defined(LED_INDICATOR)
+  if (LED_INDICATOR >= 0) {
     digitalWrite(LED_INDICATOR, HIGH);
-  #endif
+  }
 
   if (BUZZER_PIN >= 0) {
     for (int i = 0; i < beeps; i++) {
@@ -91,19 +103,19 @@ void triggerFeedback(bool isSuccess, int beeps = 1) {
     delay(isSuccess ? 200 : 600);
   }
 
-  #if defined(LED_INDICATOR)
+  if (LED_INDICATOR >= 0) {
     digitalWrite(LED_INDICATOR, LOW);
-  #endif
+  }
 }
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  #if defined(LED_INDICATOR)
+  if (LED_INDICATOR >= 0) {
     pinMode(LED_INDICATOR, OUTPUT);
     digitalWrite(LED_INDICATOR, LOW);
-  #endif
+  }
 
   if (BUZZER_PIN >= 0) {
     pinMode(BUZZER_PIN, OUTPUT);
@@ -208,16 +220,13 @@ void sendUidToServer(String uid) {
   http.begin(API_URL);
   http.addHeader("Content-Type", "application/json");
 
-  // Siapkan Payload JSON
-  StaticJsonDocument<256> doc;
-  doc["uid"] = uid;
-  doc["device_id"] = DEVICE_ID;
-
-  String requestBody;
-  serializeJson(doc, requestBody);
+  // Siapkan Payload JSON secara native tanpa perlu library eksternal
+  String requestBody = "{\"uid\":\"" + uid + "\",\"device_id\":\"" + String(DEVICE_ID) + "\"}";
 
   Serial.print("Mengirim POST ke: ");
   Serial.println(API_URL);
+  Serial.print("Payload: ");
+  Serial.println(requestBody);
 
   int httpCode = http.POST(requestBody);
 
@@ -228,37 +237,28 @@ void sendUidToServer(String uid) {
     Serial.print("Respon Server: ");
     Serial.println(response);
 
-    StaticJsonDocument<512> resDoc;
-    DeserializationError err = deserializeJson(resDoc, response);
-
-    if (!err) {
-      const char* code = resDoc["code"] | "UNKNOWN";
-      const char* message = resDoc["message"] | "";
-
-      // SKENARIO 1: REGISTRASI SUKSES KE USER LOGIN
-      if (String(code) == "REGISTRATION_SUCCESS") {
-        Serial.println("🎉 [SUKSES REGISTRASI] Kartu e-KTP berhasil didaftarkan untuk user!");
-        triggerFeedback(true, 3); // 3 bip merdu tanda sukses terdaftar
-      }
-      // SKENARIO 2: KARTU SUDAH TERDAFTAR DI AKUN LAIN (DITOLAK)
-      else if (String(code) == "DUPLICATE_CARD") {
-        Serial.println("⛔ [DITOLAK] KARTU SUDAH DIGUNAKAN DI AKUN LAIN! Tidak dapat didaftarkan.");
-        triggerFeedback(false, 2); // 2 bip panjang tanda penolakan duplikat
-      }
-      // SKENARIO 3: AKSES / IDENTIFIKASI TAP DITERIMA
-      else if (String(code) == "ACCESS_GRANTED") {
-        Serial.print("✅ [AKSES DITERIMA] Selamat datang: ");
-        Serial.println(resDoc["user"]["name"].as<const char*>());
-        triggerFeedback(true, 1); // 1 bip konfirmasi akses diterima
-      }
-      // SKENARIO 4: KARTU BELUM TERDAFTAR
-      else if (String(code) == "UNREGISTERED_CARD") {
-        Serial.println("⚠️ [KARTU BELUM TERDAFTAR] Buka web SiRW lalu klik 'Scan e-KTP' untuk mendaftar.");
-        triggerFeedback(false, 1);
-      }
-      else {
-        Serial.println(message);
-      }
+    // SKENARIO 1: REGISTRASI SUKSES KE USER LOGIN
+    if (response.indexOf("REGISTRATION_SUCCESS") >= 0) {
+      Serial.println("🎉 [SUKSES REGISTRASI] Kartu e-KTP berhasil didaftarkan untuk user login!");
+      triggerFeedback(true, 3); // 3 bip merdu tanda sukses terdaftar
+    }
+    // SKENARIO 2: KARTU SUDAH TERDAFTAR DI AKUN LAIN (DITOLAK)
+    else if (response.indexOf("DUPLICATE_CARD") >= 0) {
+      Serial.println("⛔ [DITOLAK] KARTU SUDAH DIGUNAKAN DI AKUN LAIN! Tidak dapat didaftarkan.");
+      triggerFeedback(false, 2); // 2 bip panjang tanda penolakan duplikat
+    }
+    // SKENARIO 3: AKSES / IDENTIFIKASI TAP DITERIMA
+    else if (response.indexOf("ACCESS_GRANTED") >= 0) {
+      Serial.println("✅ [AKSES DITERIMA] Identitas kartu diverifikasi!");
+      triggerFeedback(true, 1); // 1 bip konfirmasi akses diterima
+    }
+    // SKENARIO 4: KARTU BELUM TERDAFTAR
+    else if (response.indexOf("UNREGISTERED_CARD") >= 0) {
+      Serial.println("⚠️ [KARTU BELUM TERDAFTAR] Buka web SiRW lalu klik 'Scan e-KTP' untuk mendaftar.");
+      triggerFeedback(false, 1);
+    }
+    else {
+      Serial.println("ℹ️ [INFO] Data tap telah diproses oleh server.");
     }
   } else {
     Serial.print("❌ [HTTP ERROR] Gagal menghubungi server SiRW. Error: ");
