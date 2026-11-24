@@ -105,3 +105,4 @@ Kata sandi bawaan untuk semua akun demo: **`password`**. Di dalam aplikasi front
 12. **Aset & Fasilitas**: Inventaris tenda, kursi, genset, stok ketersediaan, formulir pinjam.
 13. **Koperasi Warga Mandiri**: Kartu anggota digital, simpanan pokok/wajib/sukarela, pinjaman modal.
 14. **Log Aktivitas & Audit**: Jejak audit mutasi data seluruh pengguna (Timeline & Tabel).
+15. **IoT e-KTP & RFID Reader (ESP32)**: Pemindaian kartu identitas e-KTP / RFID 13.56 MHz via alat ESP32 (Arduino Nano ESP32 & DevKit), integrasi REST API, proteksi anti-duplikasi UID, dan sistem Auto-Deploy CI/CD VPS otomatis.
