@@ -29,6 +29,7 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <SPI.h>
 #include <MFRC522.h>
 // Note: Tanpa dependency ArduinoJson agar langsung bisa dicompile tanpa instalasi tambahan!
@@ -74,9 +75,8 @@
 const char* WIFI_SSID     = "demoy";       // Ganti dengan SSID WiFi Anda
 const char* WIFI_PASSWORD = "MIMPIibadah";   // Ganti dengan Password WiFi Anda
 
-// Masukkan Alamat IP Server Laravel SiRW (Cek via cmd di komputer: ipconfig)
-// Contoh: "http://192.168.1.100:8000/api/iot/rfid/scan"
-const char* API_URL       = "http://192.168.1.50:8000/api/iot/rfid/scan";
+// Alamat API Server Live VPS SiRW Digital (HTTPS):
+const char* API_URL       = "https://ruwa.unique-monsters.my.id/api/iot/rfid/scan";
 const char* DEVICE_ID     = "ESP32-SCANNER-01";
 
 // Inisialisasi Objek Sensor MFRC522
@@ -216,25 +216,34 @@ void sendUidToServer(String uid) {
     return;
   }
 
+  WiFiClientSecure client;
+  client.setInsecure(); // Izinkan koneksi HTTPS ke VPS tanpa repot pasang sertifikat root CA
+
   HTTPClient http;
-  http.begin(API_URL);
+  if (!http.begin(client, API_URL)) {
+    Serial.println("❌ [ERROR] Gagal menginisialisasi koneksi ke server VPS!");
+    triggerFeedback(false, 1);
+    return;
+  }
+
   http.addHeader("Content-Type", "application/json");
 
   // Siapkan Payload JSON secara native tanpa perlu library eksternal
   String requestBody = "{\"uid\":\"" + uid + "\",\"device_id\":\"" + String(DEVICE_ID) + "\"}";
 
-  Serial.print("Mengirim POST ke: ");
+  Serial.println(">> Mengirim POST Tap Kartu ke Server SiRW:");
+  Serial.print("   URL: ");
   Serial.println(API_URL);
-  Serial.print("Payload: ");
+  Serial.print("   Payload: ");
   Serial.println(requestBody);
 
   int httpCode = http.POST(requestBody);
 
   if (httpCode > 0) {
     String response = http.getString();
-    Serial.print("HTTP Status Code: ");
+    Serial.print("✅ [HTTP SUCCESS] Status Code: ");
     Serial.println(httpCode);
-    Serial.print("Respon Server: ");
+    Serial.print("   Respon Backend: ");
     Serial.println(response);
 
     // SKENARIO 1: REGISTRASI SUKSES KE USER LOGIN
@@ -261,7 +270,9 @@ void sendUidToServer(String uid) {
       Serial.println("ℹ️ [INFO] Data tap telah diproses oleh server.");
     }
   } else {
-    Serial.print("❌ [HTTP ERROR] Gagal menghubungi server SiRW. Error: ");
+    Serial.print("❌ [HTTP ERROR] Gagal menghubungi server SiRW. Error Code: ");
+    Serial.print(httpCode);
+    Serial.print(" - ");
     Serial.println(http.errorToString(httpCode));
     triggerFeedback(false, 1);
   }
