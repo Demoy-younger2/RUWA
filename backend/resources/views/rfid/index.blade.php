@@ -34,17 +34,18 @@
 
         <!-- KARTU e-KTP DIGITAL (Kolom Kiri 5-Grid) -->
         <div class="lg:col-span-5 flex flex-col">
-            <div class="bg-gradient-to-tr from-slate-900 via-sky-950 to-blue-950 text-white rounded-2xl p-6 shadow-lg border border-sky-500/20 flex flex-col justify-between min-h-[260px] relative overflow-hidden">
+            <div style="background: linear-gradient(135deg, #0c1829 0%, #0f2b48 50%, #063c36 100%); border: 1px solid rgba(56, 189, 248, 0.25);" 
+                 class="text-white rounded-2xl p-6 shadow-xl flex flex-col justify-between min-h-[260px] relative overflow-hidden">
                 
                 <!-- Header Kartu -->
                 <div>
-                    <div class="flex items-start justify-between border-b border-white/10 pb-3">
+                    <div class="flex items-start justify-between border-b border-white/15 pb-3">
                         <div>
                             <span class="text-[9px] font-bold tracking-widest uppercase text-sky-300 block">REPUBLIK INDONESIA</span>
                             <span class="text-xs font-extrabold tracking-wider text-white block">KARTU TANDA PENDUDUK (e-KTP)</span>
-                            <span class="text-[10px] text-slate-400 font-medium">RW 05 SUKAMAJU DIGITAL</span>
+                            <span class="text-[10px] text-slate-300 font-medium">RW 05 SUKAMAJU DIGITAL</span>
                         </div>
-                        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/10 text-sky-200 text-[10px] font-mono font-bold">
+                        <div style="background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sky-200 text-[10px] font-mono font-bold">
                             <i class="fa-solid fa-wifi rotate-90 text-[9px]"></i>
                             <span>13.56 MHz</span>
                         </div>
@@ -53,26 +54,26 @@
                     <!-- Chip & Status -->
                     <div class="mt-4 flex items-center justify-between">
                         <!-- Chip Emas Realistis Mini -->
-                        <div class="w-10 h-7 rounded bg-gradient-to-br from-amber-300 to-yellow-500 border border-amber-200 p-0.5 shadow-sm flex flex-col justify-between">
-                            <div class="flex justify-between h-2 border-b border-amber-600/50">
-                                <span class="w-2 border-r border-amber-600/50"></span>
-                                <span class="w-2 border-l border-amber-600/50"></span>
+                        <div class="w-11 h-8 rounded bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 border border-amber-200 p-0.5 shadow-md flex flex-col justify-between">
+                            <div class="flex justify-between h-2.5 border-b border-amber-700/50">
+                                <span class="w-2.5 border-r border-amber-700/50"></span>
+                                <span class="w-2.5 border-l border-amber-700/50"></span>
                             </div>
-                            <div class="flex justify-between h-2">
-                                <span class="w-2 border-r border-amber-600/50"></span>
-                                <span class="w-2 border-l border-amber-600/50"></span>
+                            <div class="flex justify-between h-2.5">
+                                <span class="w-2.5 border-r border-amber-700/50"></span>
+                                <span class="w-2.5 border-l border-amber-700/50"></span>
                             </div>
                         </div>
 
                         <!-- Status Badge -->
                         <template x-if="userUid">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4);" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold text-emerald-300">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                 TERDAFTAR
                             </span>
                         </template>
                         <template x-if="!userUid">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4);" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold text-amber-300">
                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                                 BELUM TERHUBUNG
                             </span>
@@ -83,14 +84,14 @@
                 <!-- Info Warga & UID Kartu -->
                 <div class="mt-5 space-y-2">
                     <div>
-                        <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold block">Nama Pemilik Akun</span>
+                        <span class="text-[9px] uppercase tracking-wider text-slate-300 font-semibold block">Nama Pemilik Akun</span>
                         <p class="text-sm font-bold text-white tracking-wide truncate" x-text="userName"></p>
-                        <p class="text-[11px] text-sky-200/80">{{ $user->role_title }} • RT {{ $user->rt ?? '01' }} / RW {{ $user->rw ?? '05' }}</p>
+                        <p class="text-[11px] text-sky-200">{{ $user->role_title }} • RT {{ $user->rt ?? '01' }} / RW {{ $user->rw ?? '05' }}</p>
                     </div>
 
-                    <div class="pt-2 border-t border-white/10 flex items-center justify-between">
+                    <div class="pt-2 border-t border-white/15 flex items-center justify-between">
                         <div>
-                            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold block">UID Kartu e-KTP</span>
+                            <span class="text-[9px] uppercase tracking-wider text-slate-300 font-semibold block">UID Kartu e-KTP</span>
                             <template x-if="userUid">
                                 <span class="font-mono text-xs font-bold text-emerald-300 tracking-wider" x-text="userUid"></span>
                             </template>
@@ -101,12 +102,12 @@
 
                         <div>
                             <template x-if="userUid">
-                                <button type="button" @click="unbindCard()" class="text-[10px] font-bold text-rose-300 hover:text-white bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 px-2.5 py-1 rounded-lg transition">
+                                <button type="button" @click="unbindCard()" style="background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.4);" class="text-[10px] font-bold text-rose-200 hover:text-white px-2.5 py-1 rounded-lg transition">
                                     <i class="fa-solid fa-link-slash mr-1"></i> Lepas Kartu
                                 </button>
                             </template>
                             <template x-if="!userUid">
-                                <button type="button" @click="openModal()" class="text-[10px] font-bold text-emerald-200 hover:text-white bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-500/30 px-2.5 py-1 rounded-lg transition">
+                                <button type="button" @click="openModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4);" class="text-[10px] font-bold text-emerald-200 hover:text-white px-2.5 py-1 rounded-lg transition">
                                     <i class="fa-solid fa-qrcode mr-1"></i> Hubungkan
                                 </button>
                             </template>
