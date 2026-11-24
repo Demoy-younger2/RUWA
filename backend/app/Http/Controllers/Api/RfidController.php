@@ -58,6 +58,7 @@ class RfidController extends Controller
 
         return response()->json([
             'success' => true,
+            'status' => 'waiting',
             'message' => 'Sesi scan RFID aktif! Silakan tempelkan e-KTP / Kartu ke alat ESP32.',
             'session' => $sessionData,
         ]);
@@ -78,9 +79,11 @@ class RfidController extends Controller
         }
 
         return response()->json([
+            'success' => true,
             'status' => $session['status'],
             'user_id' => $session['user_id'],
             'user_name' => $session['user_name'],
+            'uid' => $session['rfid_uid'] ?? null,
             'rfid_uid' => $session['rfid_uid'] ?? null,
             'error_message' => $session['error_message'] ?? null,
             'message' => match ($session['status']) {
@@ -159,7 +162,9 @@ class RfidController extends Controller
 
         return response()->json([
             'success' => true,
+            'status' => 'registered',
             'message' => "Kartu e-KTP (UID: {$uid}) berhasil didaftarkan untuk {$user->name}!",
+            'uid' => $uid,
             'rfid_uid' => $uid,
             'user' => [
                 'id' => $user->id,
@@ -372,6 +377,7 @@ class RfidController extends Controller
 
         return response()->json([
             'success' => true,
+            'status' => 'success',
             'message' => 'Kartu RFID/e-KTP berhasil dilepas dari akun.',
         ]);
     }

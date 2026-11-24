@@ -466,7 +466,8 @@ function rfidView(userId, userName, currentUid) {
                     body: JSON.stringify({ user_id: this.userId })
                 });
                 const data = await res.json();
-                if (data.status) {
+                if (data.success || data.status === 'waiting' || data.status === 'success') {
+                    this.scanStatus = 'waiting';
                     this.pollStatus();
                 } else {
                     this.scanStatus = 'error';
@@ -496,12 +497,18 @@ function rfidView(userId, userName, currentUid) {
 
                     if (data.status === 'registered') {
                         this.scanStatus = 'registered';
-                        this.userUid = data.uid;
+                        this.userUid = data.uid || data.rfid_uid;
                         this.statusMessage = data.message;
                         this.stopPolling();
                     } else if (data.status === 'rejected_duplicate') {
                         this.scanStatus = 'rejected_duplicate';
-                        this.statusMessage = data.message;
+                        this.statusMessage = data.message || data.error_message;
+                        this.stopPolling();
+                    } else if (data.status === 'waiting') {
+                        this.scanStatus = 'waiting';
+                    } else if (data.status === 'idle' && this.countdown < 85) {
+                        this.scanStatus = 'error';
+                        this.statusMessage = 'Sesi telah kedaluwarsa. Silakan mulai ulang sesi.';
                         this.stopPolling();
                     }
                 } catch (e) {
@@ -531,11 +538,12 @@ function rfidView(userId, userName, currentUid) {
                     })
                 });
                 const data = await res.json();
-                this.manualSuccess = data.status;
+                const isSuccess = data.success || data.status === 'registered' || data.status === 'success';
+                this.manualSuccess = isSuccess;
                 this.manualFeedback = data.message;
 
-                if (data.status) {
-                    this.userUid = data.uid;
+                if (isSuccess) {
+                    this.userUid = data.uid || data.rfid_uid || this.manualUid;
                     setTimeout(() => {
                         this.closeModal();
                         location.reload();
@@ -562,7 +570,7 @@ function rfidView(userId, userName, currentUid) {
                     body: JSON.stringify({ user_id: this.userId })
                 });
                 const data = await res.json();
-                if (data.status) {
+                if (data.success || data.status === 'success') {
                     alert('Kartu e-KTP berhasil dilepas.');
                     location.reload();
                 } else {
@@ -594,8 +602,8 @@ function rfidView(userId, userName, currentUid) {
                     })
                 });
                 const data = await res.json();
-                this.simSuccess = data.status === 'success';
-                this.simulationLog = `[${data.action_taken || data.status}] ${data.message} (UID: ${testUid})`;
+                this.simSuccess = data.success || data.status === 'success';
+                this.simulationLog = `[${data.code || data.action_taken || data.status}] ${data.message} (UID: ${testUid})`;
             } catch (err) {
                 this.simSuccess = false;
                 this.simulationLog = 'Gagal memanggil endpoint simulasi.';
@@ -627,14 +635,17 @@ function rfidView(userId, userName, currentUid) {
                 });
             }
 
-            await fetch('/api/iot/rfid/scan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    uid: testUid,
-                    device_id: 'MODAL-SIMULATOR'
-                })
-            });
+            // Tunggu 400ms agar session siap
+            setTimeout(async () => {
+                await fetch('/api/iot/rfid/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid: testUid,
+                        device_id: 'MODAL-SIMULATOR'
+                    })
+                });
+            }, 400);
         }
     };
 }
