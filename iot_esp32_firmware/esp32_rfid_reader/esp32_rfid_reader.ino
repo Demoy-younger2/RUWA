@@ -59,8 +59,8 @@
 #endif
 
 // ================= KONFIGURASI WIFI & SERVER API =================
-const char* WIFI_SSID     = "NAMA_WIFI_ANDA";       // Ganti dengan SSID WiFi Anda
-const char* WIFI_PASSWORD = "PASSWORD_WIFI_ANDA";   // Ganti dengan Password WiFi Anda
+const char* WIFI_SSID     = "demoy";       // Ganti dengan SSID WiFi Anda
+const char* WIFI_PASSWORD = "MIMPIibadah";   // Ganti dengan Password WiFi Anda
 
 // Masukkan Alamat IP Server Laravel SiRW (Cek via cmd di komputer: ipconfig)
 // Contoh: "http://192.168.1.100:8000/api/iot/rfid/scan"

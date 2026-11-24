@@ -26,16 +26,16 @@
 
             <!-- Quick Action Buttons -->
             <div class="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
-                <a href="{{ route('rfid.index') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">
-                    <i class="fa-solid fa-id-card text-indigo-200"></i>
-                    <span>Daftarkan e-KTP</span>
+                <a href="{{ route('rfid.index') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-950 bg-white hover:bg-emerald-50 shadow-md transition">
+                    <i class="fa-solid fa-id-card text-emerald-600"></i>
+                    <span>IoT e-KTP</span>
                 </a>
-                <a href="{{ route('surat.create') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-900 bg-white hover:bg-slate-100 shadow-md transition">
-                    <i class="fa-solid fa-file-circle-plus text-emerald-600"></i>
+                <a href="{{ route('surat.create') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-xs transition">
+                    <i class="fa-solid fa-file-circle-plus text-emerald-300"></i>
                     <span>Ajukan Surat</span>
                 </a>
-                <a href="{{ route('aspirasi.create') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600/80 hover:bg-emerald-600 border border-white/20 transition">
-                    <i class="fa-solid fa-bullhorn text-xs"></i>
+                <a href="{{ route('aspirasi.create') }}" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-xs transition">
+                    <i class="fa-solid fa-bullhorn text-xs text-teal-300"></i>
                     <span>Kirim Aspirasi</span>
                 </a>
             </div>

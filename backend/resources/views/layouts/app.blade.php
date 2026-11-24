@@ -17,6 +17,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
+        [x-cloak] {
+            display: none !important;
+        }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
@@ -96,13 +99,13 @@
                     </div>
 
                     <!-- Shortcut IoT RFID e-KTP -->
-                    <a href="{{ route('rfid.index') }}" title="Registrasi e-KTP / Kartu RFID (ESP32)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition shadow-xs {{ Auth::user()->rfid_uid ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100' : 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 animate-pulse' }}">
-                        <i class="fa-solid fa-id-card {{ Auth::user()->rfid_uid ? 'text-indigo-600' : 'text-amber-600' }}"></i>
+                    <a href="{{ route('rfid.index') }}" title="Registrasi e-KTP / Kartu RFID (ESP32)" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition shadow-xs {{ Auth::user()->rfid_uid ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200' }}">
+                        <i class="fa-solid fa-id-card {{ Auth::user()->rfid_uid ? 'text-emerald-600' : 'text-slate-500' }}"></i>
                         <span class="hidden sm:inline">
                             @if(Auth::user()->rfid_uid)
-                                e-KTP: {{ substr(Auth::user()->rfid_uid, 0, 7) }}..
+                                e-KTP: <span class="font-mono font-bold">{{ substr(Auth::user()->rfid_uid, 0, 8) }}</span>
                             @else
-                                + Daftarkan e-KTP
+                                Registrasi e-KTP
                             @endif
                         </span>
                     </a>
