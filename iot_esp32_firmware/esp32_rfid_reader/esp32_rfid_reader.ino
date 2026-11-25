@@ -72,8 +72,9 @@
 #endif
 
 // ================= KONFIGURASI WIFI & SERVER API =================
-const char* WIFI_SSID     = "demoy";       // Ganti dengan SSID WiFi Anda
-const char* WIFI_PASSWORD = "MIMPIibadah";   // Ganti dengan Password WiFi Anda
+// Default SSID dan Password (bisa diganti langsung dari Serial Monitor tanpa flash ulang!)
+String currentSsid = "demoy";
+String currentPass = "MIMPIibadah";
 
 // Alamat API Server Live VPS SiRW Digital (HTTPS):
 const char* API_URL       = "https://ruwa.unique-monsters.my.id/api/iot/rfid/scan";
@@ -90,6 +91,7 @@ const unsigned long SCAN_COOLDOWN = 2000; // 2 detik jeda
 
 unsigned long lastHeartbeatTime = 0;
 const unsigned long HEARTBEAT_INTERVAL = 15000; // Kirim heartbeat setiap 15 detik
+unsigned long lastReconnectAttempt = 0;
 
 void triggerFeedback(bool isSuccess, int beeps = 1) {
   if (LED_INDICATOR >= 0) {
@@ -111,6 +113,10 @@ void triggerFeedback(bool isSuccess, int beeps = 1) {
     digitalWrite(LED_INDICATOR, LOW);
   }
 }
+
+void sendHeartbeat();
+void sendUidToServer(String uid);
+void connectToWiFi();
 
 void setup() {
   Serial.begin(115200);
@@ -145,46 +151,73 @@ void setup() {
     Serial.println("✅ [OK] Sensor RFID-RC522 Berhasil Terdeteksi!");
   }
 
-  // ================= KONEKSI WIFI DENGAN DIAGNOSA OTOMATIS =================
+  // Mulai Koneksi WiFi
+  connectToWiFi();
+
+  Serial.println("\n>> Scanner Siap. Silakan tempelkan kartu e-KTP / RFID Mifare...");
+  Serial.println("💡 TIPS: Anda dapat mengganti WiFi langsung dari sini kapan saja!");
+  Serial.println("   Ketik di Serial Monitor: NamaWiFi,Password lalu tekan Enter.");
+}
+
+void connectToWiFi() {
   Serial.println("\n--- Memindai Jaringan WiFi 2.4 GHz di Sekitar ---");
-  WiFi.mode(WIFI_STA);
+  WiFi.persistent(false);
   WiFi.disconnect(true);
-  delay(100);
+  delay(200);
+  WiFi.mode(WIFI_STA);
 
   int n = WiFi.scanNetworks();
-  bool ssidDitemukan = false;
-  if (n == 0) {
-    Serial.println("⚠️ Tidak ada jaringan WiFi yang terdeteksi di sekitar!");
+  bool foundExact = false;
+  String similarSsid = "";
+
+  if (n <= 0) {
+    Serial.println("⚠️ Tidak ada jaringan WiFi 2.4 GHz yang terdeteksi di sekitar!");
   } else {
     Serial.print("Ditemukan ");
     Serial.print(n);
-    Serial.println(" jaringan WiFi:");
+    Serial.println(" jaringan WiFi 2.4 GHz:");
     for (int i = 0; i < n; ++i) {
+      String found = WiFi.SSID(i);
       Serial.print("   ");
       Serial.print(i + 1);
       Serial.print(". \"");
-      Serial.print(WiFi.SSID(i));
+      Serial.print(found);
       Serial.print("\" (Sinyal: ");
       Serial.print(WiFi.RSSI(i));
       Serial.println(" dBm)");
-      if (WiFi.SSID(i) == WIFI_SSID) {
-        ssidDitemukan = true;
+
+      if (found == currentSsid) {
+        foundExact = true;
+      } else if (found.equalsIgnoreCase(currentSsid)) {
+        similarSsid = found;
       }
     }
   }
 
-  if (!ssidDitemukan) {
-    Serial.println("\n⚠️ [PERINGATAN] Nama WiFi \"" + String(WIFI_SSID) + "\" TIDAK DITEMUKAN di daftar scan!");
+  // PENTING: Bersihkan buffer scan agar tidak mengunci radio WiFi ESP32
+  WiFi.scanDelete();
+  delay(100);
+
+  if (!foundExact && similarSsid.length() > 0) {
+    Serial.println("\n💡 Ditemukan SSID dengan perbedaan huruf besar/kecil: \"" + similarSsid + "\"");
+    Serial.println("   Otomatis menggunakan SSID: \"" + similarSsid + "\"");
+    currentSsid = similarSsid;
+    foundExact = true;
+  }
+
+  if (!foundExact) {
+    Serial.println("\n⚠️ [PERINGATAN] Nama WiFi \"" + currentSsid + "\" TIDAK DITEMUKAN di daftar scan!");
     Serial.println("   👉 ESP32 HANYA MENDUKUNG FREKUENSI 2.4 GHz (TIDAK BISA 5 GHz).");
     Serial.println("   👉 Jika memakai Hotspot HP: Masuk ke Pengaturan Hotspot -> ganti AP Band ke \"2.4 GHz\".");
+    Serial.println("   👉 Atau ketik nama WiFi yang terdeteksi di Serial Monitor dengan format: NamaWiFi,Password");
   }
 
   Serial.print("\nMenghubungkan ke WiFi: \"");
-  Serial.print(WIFI_SSID);
+  Serial.print(currentSsid);
   Serial.println("\"...");
 
-  WiFi.setSleep(false); // Maksimalkan daya radio WiFi
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setSleep(false);
+  WiFi.begin(currentSsid.c_str(), currentPass.c_str());
 
   int wifiTimeout = 0;
   while (WiFi.status() != WL_CONNECTED && wifiTimeout < 40) {
@@ -195,33 +228,61 @@ void setup() {
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n✅ [OK] WiFi BERHASIL TERHUBUNG!");
-    Serial.print("   IP Address ESP32: ");
+    Serial.print("   SSID       : ");
+    Serial.println(WiFi.SSID());
+    Serial.print("   IP Address : ");
     Serial.println(WiFi.localIP());
-    Serial.print("   Kekuatan Sinyal : ");
+    Serial.print("   Kekuatan   : ");
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
     triggerFeedback(true, 2);
-    // Kirim heartbeat pertama ke server
+    // Kirim heartbeat pertama ke server VPS
     sendHeartbeat();
   } else {
-    Serial.println("\n❌ [GAGAL TERHUBUNG]");
-    Serial.println("   Status Error WiFi Code: " + String(WiFi.status()));
-    Serial.println("   Periksa apakah password WiFi sudah benar dan huruf besar/kecil tepat.");
+    Serial.println("\n❌ [GAGAL TERHUBUNG - Status Code: " + String(WiFi.status()) + "]");
+    Serial.println("   Catatan: Code 6 = WL_DISCONNECTED (Beacon tidak diterima atau password salah).");
   }
-
-  Serial.println("\n>> Scanner Siap. Silakan tempelkan kartu e-KTP / RFID Mifare...");
 }
 
 void loop() {
   unsigned long now = millis();
 
-  // Kirim Heartbeat berkala setiap 15 detik agar status di web selalu realtime Online
+  // 1. Fitur Interaktif: Ganti WiFi Langsung dari Serial Monitor
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n');
+    input.trim();
+    if (input.indexOf(',') > 0) {
+      int sep = input.indexOf(',');
+      currentSsid = input.substring(0, sep);
+      currentPass = input.substring(sep + 1);
+      currentSsid.trim();
+      currentPass.trim();
+      Serial.println("\n[GANTI KONFIGURASI] Mencoba menghubungkan ke:");
+      Serial.println("   SSID: \"" + currentSsid + "\"");
+      connectToWiFi();
+      return;
+    } else if (input.equalsIgnoreCase("scan") || input.equalsIgnoreCase("rescan")) {
+      connectToWiFi();
+      return;
+    } else {
+      Serial.println("Format salah. Gunakan format: NamaWiFi,Password (Contoh: demoy,MIMPIibadah)");
+    }
+  }
+
+  // 2. Kirim Heartbeat berkala setiap 15 detik agar status di web selalu realtime Online
   if (WiFi.status() == WL_CONNECTED && (now - lastHeartbeatTime >= HEARTBEAT_INTERVAL)) {
     lastHeartbeatTime = now;
     sendHeartbeat();
   }
 
-  // Cek apakah ada kartu baru terdeteksi
+  // 3. Auto-reconnect non-blocking jika WiFi putus
+  if (WiFi.status() != WL_CONNECTED && (now - lastReconnectAttempt >= 20000)) {
+    lastReconnectAttempt = now;
+    Serial.println("⚠️ [INFO] Mencoba menyambung kembali ke WiFi...");
+    WiFi.begin(currentSsid.c_str(), currentPass.c_str());
+  }
+
+  // 4. Cek apakah ada kartu baru terdeteksi
   if (!mfrc522.PICC_IsNewCardPresent()) {
     return;
   }
@@ -253,7 +314,7 @@ void loop() {
   Serial.print("💳 [KARTU TERDETEKSI] UID: ");
   Serial.println(cardUid);
 
-  // Kirim data scan ke API Server SiRW
+  // Kirim data scan ke API Server SiRW VPS
   sendUidToServer(cardUid);
 
   // Hentikan enkripsi & pembacaan kartu saat ini
@@ -285,7 +346,7 @@ void sendHeartbeat() {
 void sendUidToServer(String uid) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("❌ [ERROR] WiFi tidak tersambung. Reconnecting...");
-    WiFi.reconnect();
+    WiFi.begin(currentSsid.c_str(), currentPass.c_str());
     triggerFeedback(false, 2);
     return;
   }
