@@ -84,13 +84,15 @@ Route::get('/log-aktivitas', [ApiController::class, 'getLogAktivitas']);
 Route::get('/pengaturan', [ApiController::class, 'getPengaturan']);
 
 // 13. IoT RFID / NFC ESP32 & Manajemen Kartu e-KTP
+Route::post('/rfid/tap', [RfidController::class, 'tap']);
+Route::post('/rfid/heartbeat', [RfidController::class, 'heartbeat']);
 Route::post('/rfid/register-session', [RfidController::class, 'startRegisterSession']);
 Route::get('/rfid/status-session', [RfidController::class, 'checkRegisterSession']);
 Route::post('/rfid/cancel-session', [RfidController::class, 'cancelRegisterSession']);
 Route::post('/rfid/manual-bind', [RfidController::class, 'manualRegister']);
 Route::post('/rfid/unbind', [RfidController::class, 'unbindCard']);
 Route::get('/rfid/logs', [RfidController::class, 'getLogs']);
-Route::match(['get', 'post'], '/iot/rfid/scan', [RfidController::class, 'handleEspScan']);
-Route::match(['get', 'post'], '/iot/rfid/heartbeat', [RfidController::class, 'handleHeartbeat']);
+Route::match(['get', 'post'], '/iot/rfid/scan', [RfidController::class, 'tap']);
+Route::match(['get', 'post'], '/iot/rfid/heartbeat', [RfidController::class, 'heartbeat']);
 Route::get('/rfid/device-status', [RfidController::class, 'getDeviceStatus']);
 Route::post('/iot/rfid/login', [RfidController::class, 'loginByRfid']);

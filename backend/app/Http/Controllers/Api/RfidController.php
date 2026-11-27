@@ -18,12 +18,211 @@ class RfidController extends Controller
     const SESSION_CACHE_KEY = 'rfid_active_registration_session';
 
     /**
+     * Validasi Header X-Device-Key atau Authorization Bearer dari ESP32
+     */
+    protected function validateDeviceKey(Request $request): bool
+    {
+        $expectedKey = 'smartrw-rfid-device';
+        $deviceKey = $request->header('X-Device-Key') ?? $request->header('x-device-key');
+        $bearer = $request->bearerToken();
+
+        if ($deviceKey === $expectedKey || $bearer === $expectedKey) {
+            return true;
+        }
+
+        // Mendukung bila dikirim di payload / query parameter
+        if ($request->input('device_key') === $expectedKey || $request->input('token') === $expectedKey) {
+            return true;
+        }
+
+        // Simulator web internal SiRW Digital
+        if ($request->input('device_id') === 'ESP32-DEV-SIMULATOR' || $request->input('device_id') === 'WEB-MANUAL') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Format dan bersihkan string UID (hanya alphanumeric, uppercase)
      */
     protected function cleanUid(?string $uid): string
     {
         if (!$uid) return '';
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $uid));
+    }
+
+    /**
+     * A. Endpoint Menerima Tap Kartu RFID / e-KTP dari ESP32
+     * POST /api/rfid/tap
+     */
+    public function tap(Request $request)
+    {
+        // 1. Cek keamanan header X-Device-Key atau Bearer token
+        if (!$this->validateDeviceKey($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: Header X-Device-Key atau Authorization Bearer tidak valid.',
+            ], 401);
+        }
+
+        // 2. Validasi uid wajib ada dan bertipe string
+        $rawUid = $request->input('uid');
+        if (!$rawUid || !is_string($rawUid)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter uid wajib ada dan bertipe string.',
+            ], 400);
+        }
+
+        // 3. Ambil UID kartu
+        $uid = strtoupper((string) $request->input('uid'));
+        $cleanUid = $this->cleanUid($uid);
+        $deviceId = (string) $request->input('device_id', 'esp32-scanner-02');
+
+        // 4. Simpan sementara di Cache (last_rfid_uid selama 30 detik) & update online status
+        Cache::put('last_rfid_uid', $cleanUid, 30);
+        Cache::put('rfid_device_online', true, 15);
+        Cache::put('iot_device_status_' . $deviceId, [
+            'online' => true,
+            'device_id' => $deviceId,
+            'ip' => $request->ip(),
+            'last_seen' => now()->toISOString(),
+            'timestamp' => now()->timestamp,
+        ], 45);
+        Cache::put('iot_latest_active_device', $deviceId, 45);
+
+        // 5. Hubungkan $uid dengan logika fitur IoT SiRW
+        $activeSession = Cache::get(self::SESSION_CACHE_KEY);
+
+        if ($activeSession && ($activeSession['status'] ?? '') === 'waiting') {
+            // Skenario: Web sedang dalam modal "Scan ESP32" untuk mendaftarkan kartu ke akun warga
+            $targetUserId = $activeSession['user_id'];
+            $targetUser = User::find($targetUserId);
+
+            if ($targetUser) {
+                // Proteksi Anti-Duplikasi: Kartu tidak boleh terdaftar di akun warga lain
+                $duplicateUser = User::where('rfid_uid', $cleanUid)->where('id', '!=', $targetUserId)->first();
+
+                if ($duplicateUser) {
+                    $errorMsg = "Kartu (UID: {$cleanUid}) DITOLAK! Sudah terdaftar pada akun: {$duplicateUser->name} ({$duplicateUser->role_title})";
+                    $activeSession['status'] = 'rejected_duplicate';
+                    $activeSession['rfid_uid'] = $cleanUid;
+                    $activeSession['error_message'] = $errorMsg;
+                    Cache::put(self::SESSION_CACHE_KEY, $activeSession, 60);
+
+                    RfidScan::create([
+                        'user_id' => $targetUserId,
+                        'rfid_uid' => $cleanUid,
+                        'device_id' => $deviceId,
+                        'status' => 'rejected_duplicate',
+                        'action' => 'register_attempt',
+                        'message' => "Percobaan pendaftaran kartu ditolak: UID sudah milik {$duplicateUser->name}",
+                    ]);
+                } else {
+                    // Pendaftaran Sukses: Ikat UID kartu ke pengguna
+                    $targetUser->rfid_uid = $cleanUid;
+                    $targetUser->rfid_registered_at = now();
+                    $targetUser->save();
+
+                    Warga::where('user_id', $targetUser->id)->orWhere('nik', $targetUser->nik)->update([
+                        'rfid_uid' => $cleanUid,
+                    ]);
+
+                    $activeSession['status'] = 'registered';
+                    $activeSession['rfid_uid'] = $cleanUid;
+                    Cache::put(self::SESSION_CACHE_KEY, $activeSession, 60);
+
+                    RfidScan::create([
+                        'user_id' => $targetUser->id,
+                        'rfid_uid' => $cleanUid,
+                        'device_id' => $deviceId,
+                        'status' => 'registered',
+                        'action' => 'register',
+                        'message' => "Kartu UID {$cleanUid} berhasil didaftarkan untuk {$targetUser->name} via {$deviceId}",
+                    ]);
+
+                    ActivityLog::record(
+                        'RFID IoT',
+                        'Registrasi e-KTP ESP32',
+                        "Kartu e-KTP UID: {$cleanUid} berhasil didaftarkan untuk {$targetUser->name} melalui perangkat IoT {$deviceId}.",
+                        $targetUser
+                    );
+                }
+            }
+        } else {
+            // Skenario: Tap umum (Akses Gerbang / Presensi Ronda / Audit Scan)
+            $registeredUser = User::where('rfid_uid', $cleanUid)->first();
+
+            if ($registeredUser) {
+                RfidScan::create([
+                    'user_id' => $registeredUser->id,
+                    'rfid_uid' => $cleanUid,
+                    'device_id' => $deviceId,
+                    'status' => 'recognized',
+                    'action' => 'tap_access',
+                    'message' => "Akses / tap kartu diterima untuk {$registeredUser->name} ({$registeredUser->role_title})",
+                ]);
+
+                ActivityLog::record(
+                    'RFID IoT',
+                    'Tap Akses',
+                    "Warga {$registeredUser->name} melakukan tap kartu RFID UID: {$cleanUid} di {$deviceId}.",
+                    $registeredUser
+                );
+            } else {
+                RfidScan::create([
+                    'user_id' => null,
+                    'rfid_uid' => $cleanUid,
+                    'device_id' => $deviceId,
+                    'status' => 'unregistered',
+                    'action' => 'tap_unknown',
+                    'message' => "Kartu UID {$cleanUid} dibaca di {$deviceId} (belum terdaftar pada akun warga)",
+                ]);
+            }
+        }
+
+        // 6. Wajib kembalikan response JSON HTTP 200 agar buzzer di ESP32 berbunyi sukses
+        return response()->json([
+            'success' => true,
+            'message' => 'Kartu berhasil dibaca',
+            'uid' => $uid,
+            'device_id' => $request->input('device_id'),
+        ], 200);
+    }
+
+    /**
+     * B. Endpoint Menerima Heartbeat Berkala dari ESP32 (tiap 2 detik)
+     * POST /api/rfid/heartbeat
+     */
+    public function heartbeat(Request $request)
+    {
+        // 1. Cek keamanan header X-Device-Key atau Bearer token
+        if (!$this->validateDeviceKey($request)) {
+            return response()->json([
+                'status' => 'unauthorized',
+                'message' => 'Unauthorized: Header X-Device-Key atau Authorization Bearer tidak valid.',
+            ], 401);
+        }
+
+        $deviceId = (string) $request->input('device_id', 'esp32-scanner-02');
+        $ip = $request->input('ip', $request->ip());
+
+        // 2. Simpan status alat online di Cache selama 15 detik
+        Cache::put('rfid_device_online', true, 15);
+        Cache::put('iot_device_status_' . $deviceId, [
+            'online' => true,
+            'device_id' => $deviceId,
+            'ip' => $ip,
+            'last_seen' => now()->toISOString(),
+            'timestamp' => now()->timestamp,
+        ], 45);
+        Cache::put('iot_latest_active_device', $deviceId, 45);
+
+        // 3. Kembalikan response JSON HTTP 200
+        return response()->json([
+            'status' => 'online',
+        ], 200);
     }
 
     /**
@@ -192,6 +391,7 @@ class RfidController extends Controller
         }
 
         $uid = $this->cleanUid($rawUid);
+        $deviceId = $request->input('device_id', 'WEB-LOGIN');
 
         // Catat device online heartbeat saat scan kartu
         Cache::put('iot_device_status_' . $deviceId, [
@@ -407,6 +607,7 @@ class RfidController extends Controller
         }
 
         $uid = $this->cleanUid($rawUid);
+        $deviceId = $request->input('device_id', 'WEB-LOGIN');
 
         // Catat device online heartbeat saat scan kartu
         Cache::put('iot_device_status_' . $deviceId, [
@@ -503,10 +704,11 @@ class RfidController extends Controller
      */
     public function getDeviceStatus(Request $request)
     {
-        $deviceId = $request->input('device_id') ?? Cache::get('iot_latest_active_device', 'ESP32-SCANNER-01');
+        $deviceId = $request->input('device_id') ?? Cache::get('iot_latest_active_device', 'esp32-scanner-02');
         $deviceInfo = Cache::get('iot_device_status_' . $deviceId);
+        $rfidDeviceOnline = Cache::get('rfid_device_online', false);
 
-        if (!$deviceInfo) {
+        if (!$deviceInfo && !$rfidDeviceOnline) {
             return response()->json([
                 'success' => true,
                 'online' => false,
@@ -516,17 +718,17 @@ class RfidController extends Controller
             ]);
         }
 
-        $secondsAgo = now()->timestamp - ($deviceInfo['timestamp'] ?? now()->timestamp);
-        $isOnline = $secondsAgo <= 35;
+        $secondsAgo = $deviceInfo ? (now()->timestamp - ($deviceInfo['timestamp'] ?? now()->timestamp)) : 0;
+        $isOnline = $rfidDeviceOnline || ($secondsAgo <= 35);
 
         return response()->json([
             'success' => true,
             'online' => $isOnline,
             'status' => $isOnline ? 'online' : 'offline',
-            'device_id' => $deviceInfo['device_id'],
-            'ip' => $deviceInfo['ip'],
-            'rssi' => $deviceInfo['rssi'],
-            'last_seen' => $deviceInfo['last_seen'],
+            'device_id' => $deviceInfo['device_id'] ?? $deviceId,
+            'ip' => $deviceInfo['ip'] ?? null,
+            'rssi' => $deviceInfo['rssi'] ?? null,
+            'last_seen' => $deviceInfo['last_seen'] ?? now()->toISOString(),
             'seconds_ago' => $secondsAgo,
         ]);
     }
